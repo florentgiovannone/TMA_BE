@@ -118,7 +118,7 @@ function HomePage() {
       </main>
 
       <footer className="tma-home-footer">
-        <div>© 2026 Take Me Around Gallery</div>
+        <div>© 2026 Take Me Around</div>
       </footer>
     </div>
   )
