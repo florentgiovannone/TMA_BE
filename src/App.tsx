@@ -20,6 +20,7 @@ import { useEffect } from "react"
 
 const PAGE_TITLES: Record<string, string> = {
   "/": "Take Me Around",
+  "/allpage": "All Pages",
   "/gallery-nouvion-4738593893849": "The Fallen Madonna with the Big Boobies",
   "/along-the-river-during-qingming-festival-by-zhang-zeduan-attributed-12th-century":
     "Along the River During Qingming Festival",
@@ -51,7 +52,7 @@ function PageTitleUpdater() {
 
 
 
-function HomePage() {
+function AllPage() {
   return (
     <main style={{ margin: "0 auto", maxWidth: 900, padding: "2rem 1rem" }}>
       <h1>Take Me Around</h1>
@@ -107,12 +108,29 @@ function HomePage() {
   )
 }
 
+function HomePage() {
+  return (
+    <div className="tma-home-shell">
+      <main className="tma-home-main">
+        <div className="tma-home-intro">The Home Of</div>
+        <h1 className="tma-home-title">Take Me Around</h1>
+        <div className="tma-home-divider" />
+      </main>
+
+      <footer className="tma-home-footer">
+        <div>© 2026 Take Me Around Gallery</div>
+      </footer>
+    </div>
+  )
+}
+
 function App() {
   return (
     <>
       <PageTitleUpdater />
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/allpage" element={<AllPage />} />
         <Route path="/gallery-nouvion-4738593893849" element={<GalleryNouvionPage />} />
         <Route
           path="/along-the-river-during-qingming-festival-by-zhang-zeduan-attributed-12th-century"
