@@ -19,7 +19,7 @@ import { useEffect } from "react"
 
 const PAGE_TITLES: Record<string, string> = {
   "/": "Take Me Around",
-  "/allpage": "All Pages",
+  "/allpages": "All Pages",
   // "/the-cyrus-cylinder": "The Cyrus Cylinder",
   // "/the-sutton-hoo-helmet": "The Sutton Hoo helmet",
   // "/the-royal-game-of-ur": "The Royal Game of Ur",
@@ -129,7 +129,7 @@ function App() {
       <PageTitleUpdater />
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/allpage" element={<AllPage />} />
+        <Route path="/allpages" element={<AllPage />} />
         <Route path="/gallery-nouvion-4738593893849" element={<GalleryNouvionPage />} />
         <Route
           path="/along-the-river-during-qingming-festival-by-zhang-zeduan-attributed-12th-century"

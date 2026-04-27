@@ -5,8 +5,7 @@
 }
 
 .tma-header {
-  background-color: #006600;
-  color: #fff;
+  background: radial-gradient(circle at center, #0a479d 0%, #062c61 100%);  color: #fff;
   height: 300px;
   display: flex;
   align-items: center;
@@ -39,7 +38,7 @@
   display: block;
   width: 100%;
   background-color: #e34234;
-  color: #006600;
+  color: #0a479d;
   padding: 1rem;
   font-size: 22px;
   text-align: center;
@@ -124,7 +123,7 @@
   filter: grayscale(100%) contrast(0.9) brightness(1.05);
 }
 
-.tma-home-shell {
+.tma-home-shell .tma-header {
   min-height: 100vh;
   width: 100%;
   display: flex;
