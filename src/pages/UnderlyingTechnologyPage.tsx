@@ -1,4 +1,3 @@
-import AudioPlayer from "../components/AudioPlayer"
 import Footer from "../components/Footer"
 import "../styles/style.css"
 
@@ -14,7 +13,7 @@ export default function UnderlyingTechnologyPage() {
         </header>
 
         <a
-          href="https://www.take-me-around.com"
+          href="/underlying-technology"
           target="_blank"
           rel="noopener noreferrer"
           className="tma-banner-link"
@@ -75,7 +74,7 @@ export default function UnderlyingTechnologyPage() {
         </div>
 
         <a
-          href="https://www.take-me-around.com"
+          href="/underlying-technology"
           target="_blank"
           rel="noopener noreferrer"
           className="tma-banner-link"

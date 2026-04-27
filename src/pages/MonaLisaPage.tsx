@@ -1,7 +1,8 @@
 import monaLisaImage from "../assets/mona-lisa.png"
 import Footer from "../components/Footer"
 import "../styles/style.css"
-import { ElevenLabsAudioNative } from './ElevenLabsAudioNative';
+import AudioPlayer from "../components/AudioPlayer"
+import pageAudio from "../assets/Audio/ElevenLabs_Mona_Lisa.mp3"
 export default function MonaLisaPage() {
   return (
     <>
@@ -14,7 +15,7 @@ export default function MonaLisaPage() {
         </header>
 
         <a
-          href="https://www.take-me-around.com"
+          href="/underlying-technology"
           target="_blank"
           rel="noopener noreferrer"
           className="tma-banner-link"
@@ -29,11 +30,8 @@ export default function MonaLisaPage() {
         </a>
 
         <div className="tma-content">
-          <ElevenLabsAudioNative publicUserId="1de9224ba696f1f93e5368a65122e8072066eda524814f2c3fa2ede5527998ee"
-            size="small"
-            textColorRgba="rgba(0, 102, 0, 1)"
-          />
-          <img src={monaLisaImage} alt="Mona Lisa by Leonardo da Vinci" className="tma-painting-image" />
+<AudioPlayer src={pageAudio} />
+<img src={monaLisaImage} alt="Mona Lisa by Leonardo da Vinci" className="tma-painting-image" />
           <h2>About the painting.</h2>
           <p>
             Mona Lisa (also known as La Gioconda) is a half-length portrait oil painting on a poplar wood panel,
@@ -99,7 +97,7 @@ export default function MonaLisaPage() {
         </div>
 
         <a
-          href="https://www.take-me-around.com"
+          href="/underlying-technology"
           target="_blank"
           rel="noopener noreferrer"
           className="tma-banner-link"

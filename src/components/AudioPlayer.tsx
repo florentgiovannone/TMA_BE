@@ -1,10 +1,12 @@
-import fallenMadonnaAudio from "../assets/fallen-madonna-florence.mp3"
+import defaultAudio from "../assets/Audio/ElevenLabs_The_Fallen_Madonna_with_the_Big_Boobies.mp3"
 
-export default function AudioPlayer() {
-  const audioUrl = import.meta.env.VITE_AUDIO_URL || fallenMadonnaAudio
+type AudioPlayerProps = {
+  src?: string
+}
 
+export default function AudioPlayer({ src }: AudioPlayerProps) {
   return (
-    <audio className="tma-audio-player" controls src={audioUrl}>
+    <audio className="tma-audio-player" controls src={src ?? defaultAudio}>
       Your browser does not support the audio element.
     </audio>
   )

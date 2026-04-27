@@ -1,7 +1,8 @@
 import lewisChessmenImage from "../assets/lewis-chessmen.png"
-import { ElevenLabsAudioNative } from "./ElevenLabsAudioNative"
 import Footer from "../components/Footer"
 import "../styles/style.css"
+import AudioPlayer from "../components/AudioPlayer"
+import pageAudio from "../assets/Audio/ElevenLabs_The_Lewis_Chessmen.mp3"
 
 export default function LewisChessmenPage() {
   return (
@@ -15,7 +16,7 @@ export default function LewisChessmenPage() {
         </header>
 
         <a
-          href="https://www.take-me-around.com"
+          href="/underlying-technology"
           target="_blank"
           rel="noopener noreferrer"
           className="tma-banner-link"
@@ -30,11 +31,8 @@ export default function LewisChessmenPage() {
         </a>
 
         <div className="tma-content">
-          <ElevenLabsAudioNative publicUserId="1de9224ba696f1f93e5368a65122e8072066eda524814f2c3fa2ede5527998ee"
-            size="small"
-            textColorRgba="rgba(0, 102, 0, 1)"
-          />
-          <img src={lewisChessmenImage} alt="The Lewis Chessmen" className="tma-painting-image" />
+<AudioPlayer src={pageAudio} />
+<img src={lewisChessmenImage} alt="The Lewis Chessmen" className="tma-painting-image" />
 
           <h2>About the The Lewis Chessmen.</h2>
           <p>
@@ -104,7 +102,7 @@ export default function LewisChessmenPage() {
         </div>
 
         <a
-          href="https://www.take-me-around.com"
+          href="/underlying-technology"
           target="_blank"
           rel="noopener noreferrer"
           className="tma-banner-link"

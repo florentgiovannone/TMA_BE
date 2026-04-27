@@ -1,4 +1,3 @@
-import AudioPlayer from "../components/AudioPlayer"
 import Footer from "../components/Footer"
 import "../styles/style.css"
 

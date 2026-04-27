@@ -1,7 +1,8 @@
 import cyrusCylinderImage from "../assets/cyrus-cylinder.png"
-import { ElevenLabsAudioNative } from "./ElevenLabsAudioNative"
 import Footer from "../components/Footer"
 import "../styles/style.css"
+import AudioPlayer from "../components/AudioPlayer"
+import pageAudio from "../assets/Audio/ElevenLabs_The_Cyrus_Cylinder.mp3"
 
 export default function CyrusCylinderPage() {
   return (
@@ -15,7 +16,7 @@ export default function CyrusCylinderPage() {
         </header>
 
         <a
-          href="https://www.take-me-around.com"
+          href="/underlying-technology"
           target="_blank"
           rel="noopener noreferrer"
           className="tma-banner-link"
@@ -30,11 +31,8 @@ export default function CyrusCylinderPage() {
         </a>
 
         <div className="tma-content">
-          <ElevenLabsAudioNative publicUserId="1de9224ba696f1f93e5368a65122e8072066eda524814f2c3fa2ede5527998ee"
-            size="small"
-            textColorRgba="rgba(0, 102, 0, 1)"
-          />
-          <img src={cyrusCylinderImage} alt="The Cyrus Cylinder" className="tma-painting-image" />
+<AudioPlayer src={pageAudio} />
+<img src={cyrusCylinderImage} alt="The Cyrus Cylinder" className="tma-painting-image" />
 
           <h2>About the The Cyrus Cylinder.</h2>
           <p>
@@ -97,7 +95,7 @@ export default function CyrusCylinderPage() {
         </div>
 
         <a
-          href="https://www.take-me-around.com"
+          href="/underlying-technology"
           target="_blank"
           rel="noopener noreferrer"
           className="tma-banner-link"
