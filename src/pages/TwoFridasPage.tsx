@@ -2,6 +2,7 @@ import twoFridasImage from "../assets/two-fridas.png"
 import Footer from "../components/Footer"
 import "../styles/style.css"
 import AudioPlayer from "../components/AudioPlayer"
+import pageAudio from "../assets/Audio/ElevenLabs_The_Two_Fridas.mp3"
 
 export default function TwoFridasPage() {
   return (
@@ -30,7 +31,7 @@ export default function TwoFridasPage() {
         </a>
 
         <div className="tma-content">
-<AudioPlayer />
+<AudioPlayer src={pageAudio} />
 <img src={twoFridasImage} alt="The Two Fridas by Frida Kahlo" className="tma-painting-image" />
 
           <h2>About the painting.</h2>
