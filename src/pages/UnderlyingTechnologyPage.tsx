@@ -4,7 +4,7 @@ import "../styles/style.css"
 export default function UnderlyingTechnologyPage() {
   return (
     <>
-      <main className="tma-gallery-page">
+      <main className="tma-gallery-page tma-underlying-page">
         <header className="tma-header">
           <div className="tma-header-inner">
             <h1 className="tma-page-title">Underlying Technology</h1>

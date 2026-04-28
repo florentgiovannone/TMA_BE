@@ -198,6 +198,13 @@
   }
 }
 
+@media (max-width: 1024px) {
+  .tma-underlying-page .tma-content {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
 @media (max-width: 768px) {
   .tma-home-footer {
     padding: 40px 20px;
