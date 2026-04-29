@@ -20,12 +20,6 @@ export default function UnderlyingTechnologyPage() {
     <>
       <main className="tma-gallery-page">
         <header className="tma-header tma-underlying-header">
-          {showBackButton && (
-            <button type="button" className="tma-underlying-back-button" onClick={() => navigate(-1)}>
-              Go back
-            </button>
-          )}
-
           <div className="tma-header-inner">
             <h1 className="tma-page-title">Underlying Technology</h1>
             <p className="tma-page-subtitle">Overview of the Genie Tag.</p>
@@ -91,9 +85,18 @@ export default function UnderlyingTechnologyPage() {
           <p>*subject to relevant privacy permission regulations.</p>
         </div>
 
+        {showBackButton && (
+          <div className="tma-underlying-back-wrap">
+            <button type="button" className="tma-underlying-back-button" onClick={() => navigate(-1)}>
+              Go back
+            </button>
+          </div>
+        )}
+
 
       </main>
       <Footer />
     </>
   )
 }
+
