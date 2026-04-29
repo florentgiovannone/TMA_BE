@@ -17,8 +17,6 @@ export default function TwoFridasPage() {
 
         <a
           href="/underlying-technology"
-          target="_blank"
-          rel="noopener noreferrer"
           className="tma-banner-link"
         >
           <p className="tma-banner-text">
@@ -31,8 +29,8 @@ export default function TwoFridasPage() {
         </a>
 
         <div className="tma-content">
-<AudioPlayer src={pageAudio} />
-<img src={twoFridasImage} alt="The Two Fridas by Frida Kahlo" className="tma-painting-image" />
+          <AudioPlayer src={pageAudio} />
+          <img src={twoFridasImage} alt="The Two Fridas by Frida Kahlo" className="tma-painting-image" />
 
           <h2>About the painting.</h2>
           <p>
@@ -95,8 +93,6 @@ export default function TwoFridasPage() {
 
         <a
           href="/underlying-technology"
-          target="_blank"
-          rel="noopener noreferrer"
           className="tma-banner-link"
         >
           <p className="tma-banner-text">

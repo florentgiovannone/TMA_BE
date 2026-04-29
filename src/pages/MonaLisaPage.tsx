@@ -16,8 +16,6 @@ export default function MonaLisaPage() {
 
         <a
           href="/underlying-technology"
-          target="_blank"
-          rel="noopener noreferrer"
           className="tma-banner-link"
         >
           <p className="tma-banner-text">
@@ -30,8 +28,8 @@ export default function MonaLisaPage() {
         </a>
 
         <div className="tma-content">
-<AudioPlayer src={pageAudio} />
-<img src={monaLisaImage} alt="Mona Lisa by Leonardo da Vinci" className="tma-painting-image" />
+          <AudioPlayer src={pageAudio} />
+          <img src={monaLisaImage} alt="Mona Lisa by Leonardo da Vinci" className="tma-painting-image" />
           <h2>About the painting.</h2>
           <p>
             Mona Lisa (also known as La Gioconda) is a half-length portrait oil painting on a poplar wood panel,
@@ -98,8 +96,6 @@ export default function MonaLisaPage() {
 
         <a
           href="/underlying-technology"
-          target="_blank"
-          rel="noopener noreferrer"
           className="tma-banner-link"
         >
           <p className="tma-banner-text">

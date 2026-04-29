@@ -21,8 +21,6 @@ export default function GalleryNouvionPage() {
 
         <a
           href="/underlying-technology"
-          target="_blank"
-          rel="noopener noreferrer"
           className="tma-banner-link"
         >
           <p className="tma-banner-text">
@@ -117,8 +115,6 @@ export default function GalleryNouvionPage() {
         </div>
         <a
           href="/underlying-technology"
-          target="_blank"
-          rel="noopener noreferrer"
           className="tma-banner-link"
         >
           <p className="tma-banner-text">

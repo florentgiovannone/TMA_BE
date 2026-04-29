@@ -17,8 +17,6 @@ export default function RoyalGameOfUrPage() {
 
         <a
           href="/underlying-technology"
-          target="_blank"
-          rel="noopener noreferrer"
           className="tma-banner-link"
         >
           <p className="tma-banner-text">
@@ -31,8 +29,8 @@ export default function RoyalGameOfUrPage() {
         </a>
 
         <div className="tma-content">
-<AudioPlayer src={pageAudio} />
-<img src={royalGameOfUrImage} alt="The Royal Game of Ur" className="tma-painting-image" />
+          <AudioPlayer src={pageAudio} />
+          <img src={royalGameOfUrImage} alt="The Royal Game of Ur" className="tma-painting-image" />
 
           <h2>About the The Royal Game of Ur.</h2>
           <p>
@@ -99,8 +97,6 @@ export default function RoyalGameOfUrPage() {
 
         <a
           href="/underlying-technology"
-          target="_blank"
-          rel="noopener noreferrer"
           className="tma-banner-link"
         >
           <p className="tma-banner-text">

@@ -17,8 +17,6 @@ export default function StarryNightPage() {
 
         <a
           href="/underlying-technology"
-          target="_blank"
-          rel="noopener noreferrer"
           className="tma-banner-link"
         >
           <p className="tma-banner-text">
@@ -31,8 +29,8 @@ export default function StarryNightPage() {
         </a>
 
         <div className="tma-content">
-<AudioPlayer src={pageAudio} />
-<img src={starryNightImage} alt="The Starry Night by Vincent van Gogh" className="tma-painting-image" />
+          <AudioPlayer src={pageAudio} />
+          <img src={starryNightImage} alt="The Starry Night by Vincent van Gogh" className="tma-painting-image" />
 
           <h2>About the painting.</h2>
           <p>
@@ -93,8 +91,6 @@ export default function StarryNightPage() {
 
         <a
           href="/underlying-technology"
-          target="_blank"
-          rel="noopener noreferrer"
           className="tma-banner-link"
         >
           <p className="tma-banner-text">

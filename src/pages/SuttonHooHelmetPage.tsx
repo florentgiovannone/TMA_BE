@@ -17,8 +17,6 @@ export default function SuttonHooHelmetPage() {
 
         <a
           href="/underlying-technology"
-          target="_blank"
-          rel="noopener noreferrer"
           className="tma-banner-link"
         >
           <p className="tma-banner-text">
@@ -31,8 +29,8 @@ export default function SuttonHooHelmetPage() {
         </a>
 
         <div className="tma-content">
-<AudioPlayer src={pageAudio} />
-<img src={suttonHooHelmetImage} alt="The Sutton Hoo helmet" className="tma-painting-image" />
+          <AudioPlayer src={pageAudio} />
+          <img src={suttonHooHelmetImage} alt="The Sutton Hoo helmet" className="tma-painting-image" />
 
           <h2>About the Helmet.</h2>
           <p>
@@ -104,8 +102,6 @@ export default function SuttonHooHelmetPage() {
 
         <a
           href="/underlying-technology"
-          target="_blank"
-          rel="noopener noreferrer"
           className="tma-banner-link"
         >
           <p className="tma-banner-text">

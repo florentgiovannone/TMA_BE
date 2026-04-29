@@ -17,8 +17,6 @@ export default function CyrusCylinderPage() {
 
         <a
           href="/underlying-technology"
-          target="_blank"
-          rel="noopener noreferrer"
           className="tma-banner-link"
         >
           <p className="tma-banner-text">
@@ -31,8 +29,8 @@ export default function CyrusCylinderPage() {
         </a>
 
         <div className="tma-content">
-<AudioPlayer src={pageAudio} />
-<img src={cyrusCylinderImage} alt="The Cyrus Cylinder" className="tma-painting-image" />
+          <AudioPlayer src={pageAudio} />
+          <img src={cyrusCylinderImage} alt="The Cyrus Cylinder" className="tma-painting-image" />
 
           <h2>About the The Cyrus Cylinder.</h2>
           <p>
@@ -96,8 +94,6 @@ export default function CyrusCylinderPage() {
 
         <a
           href="/underlying-technology"
-          target="_blank"
-          rel="noopener noreferrer"
           className="tma-banner-link"
         >
           <p className="tma-banner-text">

@@ -17,8 +17,6 @@ export default function LewisChessmenPage() {
 
         <a
           href="/underlying-technology"
-          target="_blank"
-          rel="noopener noreferrer"
           className="tma-banner-link"
         >
           <p className="tma-banner-text">
@@ -31,8 +29,8 @@ export default function LewisChessmenPage() {
         </a>
 
         <div className="tma-content">
-<AudioPlayer src={pageAudio} />
-<img src={lewisChessmenImage} alt="The Lewis Chessmen" className="tma-painting-image" />
+          <AudioPlayer src={pageAudio} />
+          <img src={lewisChessmenImage} alt="The Lewis Chessmen" className="tma-painting-image" />
 
           <h2>About the The Lewis Chessmen.</h2>
           <p>
@@ -103,8 +101,6 @@ export default function LewisChessmenPage() {
 
         <a
           href="/underlying-technology"
-          target="_blank"
-          rel="noopener noreferrer"
           className="tma-banner-link"
         >
           <p className="tma-banner-text">

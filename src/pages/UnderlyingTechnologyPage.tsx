@@ -1,11 +1,31 @@
 import Footer from "../components/Footer"
 import "../styles/style.css"
+import { useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom"
 
 export default function UnderlyingTechnologyPage() {
+  const navigate = useNavigate()
+  const [showBackButton, setShowBackButton] = useState(false)
+
+  useEffect(() => {
+    const ref = document.referrer
+    const sameOrigin = ref && ref.startsWith(window.location.origin)
+    const hasReferrer = Boolean(sameOrigin && ref !== window.location.href)
+
+    // Only show when we likely came from another page in this app.
+    setShowBackButton(hasReferrer && window.history.length > 1)
+  }, [])
+
   return (
     <>
-      <main className="tma-gallery-page tma-underlying-page">
-        <header className="tma-header">
+      <main className="tma-gallery-page">
+        <header className="tma-header tma-underlying-header">
+          {showBackButton && (
+            <button type="button" className="tma-underlying-back-button" onClick={() => navigate(-1)}>
+              Go back
+            </button>
+          )}
+
           <div className="tma-header-inner">
             <h1 className="tma-page-title">Underlying Technology</h1>
             <p className="tma-page-subtitle">Overview of the Genie Tag.</p>
@@ -14,8 +34,6 @@ export default function UnderlyingTechnologyPage() {
 
         <a
           href="/underlying-technology"
-          target="_blank"
-          rel="noopener noreferrer"
           className="tma-banner-link"
         >
           <p className="tma-banner-text">
@@ -73,16 +91,7 @@ export default function UnderlyingTechnologyPage() {
           <p>*subject to relevant privacy permission regulations.</p>
         </div>
 
-        <a
-          href="/underlying-technology"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="tma-banner-link"
-        >
-          <p className="tma-banner-text">
-            <strong>Click this banner to discover more about technology used to create this page.</strong>
-          </p>
-        </a>
+
       </main>
       <Footer />
     </>
