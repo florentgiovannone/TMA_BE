@@ -11,7 +11,7 @@ export default function CyrusCylinderPage() {
         <header className="tma-header">
           <div className="tma-header-inner">
             <h1 className="tma-page-title">The Cyrus Cylinder</h1>
-            <p className="tma-page-subtitle">The Babylonian People</p>
+            <p className="tma-page-subtitle">559-530 BCE from the Babylonian People</p>
           </div>
         </header>
 
@@ -32,7 +32,7 @@ export default function CyrusCylinderPage() {
           <AudioPlayer src={pageAudio} />
           <img src={cyrusCylinderImage} alt="The Cyrus Cylinder" className="tma-painting-image" />
 
-          <h2>About the The Cyrus Cylinder.</h2>
+          <h2>About the Cyrus Cylinder.</h2>
           <p>
             The Cyrus Cylinder is a small barrel-shaped clay cylinder from the 6th century BCE, inscribed all around
             with a royal proclamation in Akkadian cuneiform using the Babylonian dialect. It dates to the period
@@ -61,7 +61,7 @@ export default function CyrusCylinderPage() {
             tolerance.
           </p>
 
-          <h2>About The Babylonian People</h2>
+          <h2>About the Babylonian People</h2>
           <p>
             The Babylonians were the people of Babylonia, a major Mesopotamian civilization centered on the city of
             Babylon in what is now southern Iraq. Rooted in the older Sumerian and Akkadian cultures, the Babylonians

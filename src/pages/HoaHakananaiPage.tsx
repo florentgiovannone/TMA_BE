@@ -11,7 +11,7 @@ export default function HoaHakananaiPage() {
         <header className="tma-header">
           <div className="tma-header-inner">
             <h1 className="tma-page-title">Hoa Hakananaiʻa</h1>
-            <p className="tma-page-subtitle">The Rapa Nui People</p>
+            <p className="tma-page-subtitle">Circa 1000-1200 CE from the Rapa Nui People</p>
           </div>
         </header>
 
@@ -55,7 +55,7 @@ export default function HoaHakananaiPage() {
             window into how ancestor-statues could be integrated into changing religious practices over time.
           </p>
           <p>
-            Hoa Hakananaiʻa was removed from Orongo in 1868 by the crew of the British ship HMS Topaze and taken to
+            Hoa Hakananai'a was removed from Orongo in 1868 by the crew of the British ship HMS Topaze and taken to
             the United Kingdom, where it was later given to the British Museum. Its departure from Rapa Nui has become
             a focal point in debates about museum ethics and the restitution of cultural heritage, as many Rapa Nui
             today view the statue less as a colonial acquisition and more as a sacred ancestor figure forcibly taken

@@ -2,7 +2,7 @@ import suttonHooHelmetImage from "../assets/sutton-hoo-helmet.png"
 import Footer from "../components/Footer"
 import "../styles/style.css"
 import AudioPlayer from "../components/AudioPlayer"
-import pageAudio from "../assets/Audio/ElevenLabs_The_Sutton_Hoo_Helmet.mp3"
+import pageAudio from "../assets/Audio/ElevenLabs_The_Sutton_Hoo_helmet.mp3"
 
 export default function SuttonHooHelmetPage() {
   return (
@@ -11,7 +11,7 @@ export default function SuttonHooHelmetPage() {
         <header className="tma-header">
           <div className="tma-header-inner">
             <h1 className="tma-page-title">The Sutton Hoo helmet</h1>
-            <p className="tma-page-subtitle">Skilled Anglo-Saxon armorers</p>
+            <p className="tma-page-subtitle">Circa 620 to 625 CE by Anglo-Saxon armorers</p>
           </div>
         </header>
 
@@ -64,7 +64,7 @@ export default function SuttonHooHelmetPage() {
             storytelling that embodies the martial, ritual, and artistic world of early English kingship.
           </p>
 
-          <h2>About The Anglo-Saxons</h2>
+          <h2>About the Anglo-Saxons</h2>
           <p>
             The Anglo-Saxons were the Germanic peoples who settled in lowland Britain from the 5th century CE onward,
             forming the kingdoms that would eventually become England. They came mainly from what is now Denmark,

@@ -32,7 +32,7 @@ export default function LewisChessmenPage() {
           <AudioPlayer src={pageAudio} />
           <img src={lewisChessmenImage} alt="The Lewis Chessmen" className="tma-painting-image" />
 
-          <h2>About the The Lewis Chessmen.</h2>
+          <h2>About The Lewis Chessmen.</h2>
           <p>
             The Lewis Chessmen are a group of small, intricately carved medieval gaming pieces, most of which were
             made from walrus ivory and a few from whale tooth, believed to date from around 1150-1200 CE. They were

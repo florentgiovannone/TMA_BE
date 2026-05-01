@@ -11,7 +11,7 @@ export default function RosettaStonePage() {
         <header className="tma-header">
           <div className="tma-header-inner">
             <h1 className="tma-page-title">The Rosetta Stone</h1>
-            <p className="tma-page-subtitle">The Cult of King Ptolemy V</p>
+            <p className="tma-page-subtitle">196 BCE by the Cult of King Ptolemy V</p>
           </div>
         </header>
 

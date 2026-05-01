@@ -11,7 +11,7 @@ export default function RoyalGameOfUrPage() {
         <header className="tma-header">
           <div className="tma-header-inner">
             <h1 className="tma-page-title">The Royal Game of Ur</h1>
-            <p className="tma-page-subtitle">The Sumerians</p>
+            <p className="tma-page-subtitle">Circa 2600-2400 BCE, Sumeria</p>
           </div>
         </header>
 
@@ -32,7 +32,7 @@ export default function RoyalGameOfUrPage() {
           <AudioPlayer src={pageAudio} />
           <img src={royalGameOfUrImage} alt="The Royal Game of Ur" className="tma-painting-image" />
 
-          <h2>About the The Royal Game of Ur.</h2>
+          <h2>About  The Royal Game of Ur.</h2>
           <p>
             The Royal Game of Ur is one of the oldest known playable board games, dating back to the early third
             millennium BCE in ancient Mesopotamia. The name comes from the Sumerian city of Ur, where British
