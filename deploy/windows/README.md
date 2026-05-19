@@ -19,23 +19,22 @@ Test on the VM: `http://localhost:5050/api/health`
 
 Open **Windows Firewall** inbound TCP **5050** (or only allow your reverse proxy).
 
+## Install Python first (if `py` / `python` not found)
+
+1. https://www.python.org/downloads/windows/ → **Python 3.12**
+2. Installer: enable **“Add python.exe to PATH”**
+3. Close PowerShell, open a new window
+4. Check: `python --version`
+
 ## Option B — Python only (no Docker)
 
 Gunicorn does not run on Windows. Use **waitress**:
 
 ```powershell
-cd C:\path\to\Backend
-py -3.12 -m venv .venv
-.\.venv\Scripts\pip install -r requirements.txt
+cd C:\Backend
 copy .env.example .env
 # Edit .env
 
-.\.venv\Scripts\waitress-serve --listen=0.0.0.0:5050 app:app
-```
-
-Or run the helper script:
-
-```powershell
 .\deploy\windows\run-api.ps1
 ```
 
