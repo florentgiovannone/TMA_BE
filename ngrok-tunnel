@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Public HTTPS URL → local Flask. Run ./run in another terminal first.
+# One-time: ngrok config add-authtoken <token>  (https://dashboard.ngrok.com/get-started/your-authtoken)
+set -euo pipefail
+PORT="${PORT:-5050}"
+if ! curl -sf -o /dev/null --connect-timeout 2 "http://127.0.0.1:${PORT}/api/health"; then
+  echo "ERR: Nothing is responding at http://127.0.0.1:${PORT} (ERR_NGROK_8012 / connection refused)."
+  echo "    Start the API first in another terminal, from this folder:"
+  echo "      ./run"
+  echo "    If Flask uses another port:  PORT=5051 ./run   then   PORT=5051 ./ngrok-tunnel"
+  exit 1
+fi
+echo "Tunnel → http://127.0.0.1:${PORT}  (set PORT=5051 if needed)"
+echo "Netlify: set VITE_API_PROXY_TARGET to this https URL (not VITE_API_BASE_URL) and redeploy."
+echo "Browsers must not call ngrok directly — use same-origin /api on takemearound.* (Netlify proxy)."
+exec ngrok http "127.0.0.1:${PORT}"
