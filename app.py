@@ -8,6 +8,7 @@ import secrets
 
 import psycopg2
 from psycopg2 import sql
+from psycopg2.sql import Literal as SqlLiteral
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 
@@ -70,7 +71,12 @@ CORS(
     origins=_cors,
     methods=["GET", "OPTIONS"],
     allow_headers=CORS_ALLOW_HEADERS,
-    expose_headers=["X-DB-Error"],
+    expose_headers=[
+        "X-DB-Error",
+        "X-Poise-Limit",
+        "X-Poise-Offset",
+        "X-Poise-Returned",
+    ],
     supports_credentials=False,
     max_age=86400,
 )
@@ -85,6 +91,9 @@ def _apply_cors_headers(response):
     response.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
     response.headers["Access-Control-Allow-Headers"] = ", ".join(CORS_ALLOW_HEADERS)
     response.headers["Access-Control-Max-Age"] = "86400"
+    response.headers["Access-Control-Expose-Headers"] = (
+        "X-DB-Error, X-Poise-Limit, X-Poise-Offset, X-Poise-Returned"
+    )
     return response
 
 
@@ -186,7 +195,32 @@ def _normalize_poise_row(row: dict) -> dict:
     }
 
 
-def query_poise_log_items():
+def _poise_log_default_limit() -> int:
+    return max(1, min(100_000, int(os.getenv("POISE_LOG_LIMIT", "25000"))))
+
+
+def _poise_log_max_limit() -> int:
+    return max(1, min(200_000, int(os.getenv("POISE_LOG_MAX_LIMIT", "100000"))))
+
+
+def _parse_limit_offset() -> tuple[int, int]:
+    """From query string: ?limit= & ?offset= with safe bounds."""
+    default = _poise_log_default_limit()
+    cap = _poise_log_max_limit()
+    try:
+        limit = int(request.args.get("limit", default))
+    except (TypeError, ValueError):
+        limit = default
+    try:
+        offset = int(request.args.get("offset", 0))
+    except (TypeError, ValueError):
+        offset = 0
+    limit = max(1, min(cap, limit))
+    offset = max(0, offset)
+    return limit, offset
+
+
+def query_poise_log_items(limit: int, offset: int):
     """Returns (list of row dicts, None) or (None, db_error_line)."""
     try:
         conn = psycopg2.connect(**db_config())
@@ -206,8 +240,12 @@ def query_poise_log_items():
             return None, "poise_log has no int_id/id/log_id column for ordering"
 
         query = sql.SQL(
-            "SELECT * FROM poise_log ORDER BY {oc} DESC NULLS LAST LIMIT 100"
-        ).format(oc=sql.Identifier(order_col))
+            "SELECT * FROM poise_log ORDER BY {oc} DESC NULLS LAST LIMIT {lim} OFFSET {off}"
+        ).format(
+            oc=sql.Identifier(order_col),
+            lim=SqlLiteral(limit),
+            off=SqlLiteral(offset),
+        )
         cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute(query)
         rows = cur.fetchall()
@@ -222,12 +260,17 @@ def query_poise_log_items():
 
 def _items_response():
     """Build JSON response for poise_log rows (200, or 200 with empty list + X-DB-Error)."""
-    data, err = query_poise_log_items()
+    limit, offset = _parse_limit_offset()
+    data, err = query_poise_log_items(limit, offset)
     if err is not None:
         response = jsonify([])
         response.headers["X-DB-Error"] = err
         return response, 200
-    return jsonify(data)
+    response = jsonify(data)
+    response.headers["X-Poise-Limit"] = str(limit)
+    response.headers["X-Poise-Offset"] = str(offset)
+    response.headers["X-Poise-Returned"] = str(len(data))
+    return response
 
 
 @app.get("/api/health")
@@ -248,7 +291,11 @@ def health():
 
 @app.get("/api/items")
 def get_items():
-    """Log data; requires X-Dashboard-Password (same as dashboard)."""
+    """Log data; requires X-Dashboard-Password (same as dashboard).
+
+    Query: ?limit= (default POISE_LOG_LIMIT env, cap POISE_LOG_MAX_LIMIT) & ?offset=
+    for paging (newest first). Example: ?limit=500&offset=500 for the next page.
+    """
     expected = _dashboard_password()
     if not _password_header_ok(expected):
         return jsonify({"error": "unauthorized"}), 401
