@@ -8,7 +8,7 @@ Flask API for the Take Me Around dashboard (`poise_log` → JSON).
 ./run
 ```
 
-API: `http://127.0.0.1:5050` — health: `/api/health`, data: `/api/items` (header `X-Dashboard-Password`).
+API: `http://127.0.0.1:5050` — health: `/api/health`, data: `/api/items` (header `X-Dashboard-Password`; Arkın app also sends `X-Dashboard-App: arkin` and uses `DASHBOARD_PASSWORD_ARKIN`).
 
 Optional tunnel:
 
@@ -16,7 +16,7 @@ Optional tunnel:
 ./ngrok-tunnel   # in another terminal, after ./run
 ```
 
-Copy `.env.example` → `.env` and set Postgres + `DASHBOARD_PASSWORD`.
+Copy `.env.example` → `.env` and set Postgres + `DASHBOARD_PASSWORD` (+ `DASHBOARD_PASSWORD_ARKIN` for the Rodin site).
 
 ## Deploy
 
