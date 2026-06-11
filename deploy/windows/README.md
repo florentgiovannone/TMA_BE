@@ -9,7 +9,7 @@ Same image as AWS; needs [Docker Desktop](https://www.docker.com/products/docker
 ```powershell
 cd C:\path\to\Backend
 copy .env.example .env
-# Edit .env: PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD, DASHBOARD_PASSWORD
+# Edit .env: PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD, DASHBOARD_PASSWORD, DASHBOARD_PASSWORD_ARKIN
 
 docker build -t tma-be-api .
 docker run -d --name tma-api --restart unless-stopped -p 5050:8080 --env-file .env tma-be-api

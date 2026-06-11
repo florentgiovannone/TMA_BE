@@ -27,6 +27,7 @@ PGDATABASE=aba_cards
 PGUSER=poise
 PGPASSWORD=...
 DASHBOARD_PASSWORD=choose-a-strong-password
+DASHBOARD_PASSWORD_ARKIN=rodin-dashboard
 ```
 
 ## 2. Push the Docker image to ECR

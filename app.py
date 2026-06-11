@@ -218,26 +218,33 @@ def _extract_sar_language(row: dict) -> tuple[str | None, str]:
     return sar, lang
 
 
-def _ensure_visitor_registry_table(conn):
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            CREATE TABLE IF NOT EXISTS visitor_registry (
-                id BIGSERIAL PRIMARY KEY,
-                sar TEXT UNIQUE NOT NULL,
-                language_code TEXT NOT NULL,
-                visitor_number TEXT UNIQUE,
-                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+def _ensure_visitor_registry_table(conn) -> bool:
+    """Create visitor_registry if allowed. Returns False when DB user lacks CREATE (read-only poise)."""
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS visitor_registry (
+                    id BIGSERIAL PRIMARY KEY,
+                    sar TEXT UNIQUE NOT NULL,
+                    language_code TEXT NOT NULL,
+                    visitor_number TEXT UNIQUE,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                )
+                """
             )
-            """
-        )
-        cur.execute(
-            """
-            CREATE UNIQUE INDEX IF NOT EXISTS idx_visitor_registry_visitor_number
-            ON visitor_registry(visitor_number)
-            WHERE visitor_number IS NOT NULL
-            """
-        )
+            cur.execute(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_visitor_registry_visitor_number
+                ON visitor_registry(visitor_number)
+                WHERE visitor_number IS NOT NULL
+                """
+            )
+        conn.commit()
+        return True
+    except psycopg2.Error:
+        conn.rollback()
+        return False
 
 
 def _get_or_create_visitor_number(conn, sar: str, language_code: str) -> str:
@@ -294,14 +301,18 @@ def _get_or_create_visitor_number(conn, sar: str, language_code: str) -> str:
 
 
 def _attach_visitor_numbers(conn, rows: list[dict]) -> list[dict]:
-    sar_to_visitor: dict[str, str] = {}
-    for row in rows:
-        sar, language = _extract_sar_language(row)
-        if not sar:
-            continue
-        if sar not in sar_to_visitor:
-            sar_to_visitor[sar] = _get_or_create_visitor_number(conn, sar, language)
-        row["visitor_number"] = sar_to_visitor[sar]
+    try:
+        sar_to_visitor: dict[str, str] = {}
+        for row in rows:
+            sar, language = _extract_sar_language(row)
+            if not sar:
+                continue
+            if sar not in sar_to_visitor:
+                sar_to_visitor[sar] = _get_or_create_visitor_number(conn, sar, language)
+            row["visitor_number"] = sar_to_visitor[sar]
+        conn.commit()
+    except psycopg2.Error:
+        conn.rollback()
     return rows
 
 
@@ -378,7 +389,7 @@ def query_poise_log_items(limit: int, offset: int):
     """Returns (list of row dicts, None) or (None, db_error_line)."""
     try:
         conn = psycopg2.connect(**db_config())
-        _ensure_visitor_registry_table(conn)
+        visitor_registry = _ensure_visitor_registry_table(conn)
         meta_cur = conn.cursor()
         cols = _fetch_poise_log_columns(meta_cur)
         meta_cur.close()
@@ -405,8 +416,8 @@ def query_poise_log_items(limit: int, offset: int):
         cur.execute(query)
         rows = cur.fetchall()
         cur.close()
-        rows = _attach_visitor_numbers(conn, rows)
-        conn.commit()
+        if visitor_registry:
+            rows = _attach_visitor_numbers(conn, rows)
         conn.close()
     except psycopg2.Error as exc:
         return None, str(exc).splitlines()[0][:250]

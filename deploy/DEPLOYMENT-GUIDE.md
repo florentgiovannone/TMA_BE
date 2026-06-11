@@ -163,7 +163,10 @@ PGDATABASE=aba_cards
 PGUSER=poise
 PGPASSWORD=your-db-password
 DASHBOARD_PASSWORD=choose-a-strong-password
+DASHBOARD_PASSWORD_ARKIN=rodin-dashboard
 ```
+
+(`DASHBOARD_PASSWORD_ARKIN` is required for the Arkın Rodin dashboard; it sends `X-Dashboard-App: arkin`.)
 
 ### 2.3 Run the API
 
@@ -186,6 +189,7 @@ Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 ```powershell
 curl http://localhost:5050/api/health
 curl -H "X-Dashboard-Password: choose-a-strong-password" http://localhost:5050/api/items
+curl -H "X-Dashboard-App: arkin" -H "X-Dashboard-Password: rodin-dashboard" http://localhost:5050/api/secure/items
 ```
 
 ### 2.5 Expose the VM to the internet (for Netlify)
