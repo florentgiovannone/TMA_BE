@@ -144,10 +144,11 @@ def db_config():
 
 
 def db_configs():
-    """Primary PGPORT, plus PGPORT_EXTRA (default 5433) for a second SSH tunnel."""
+    """Primary PGPORT uses PGDATABASE. PGPORT_EXTRA (default 5433) uses PGDATABASE_EXTRA (default cards)."""
     primary = db_config()
     configs = [primary]
     extra_raw = os.getenv("PGPORT_EXTRA", "5433")
+    extra_dbname = (os.getenv("PGDATABASE_EXTRA", "cards") or "cards").strip() or "cards"
     if not extra_raw or not extra_raw.strip():
         return configs
     for part in extra_raw.split(","):
@@ -159,6 +160,7 @@ def db_configs():
             continue
         extra = dict(primary)
         extra["port"] = port
+        extra["dbname"] = extra_dbname
         configs.append(extra)
     return configs
 
@@ -527,6 +529,9 @@ def health():
                 "port": cfg["port"],
                 "ports": [item["port"] for item in configs],
                 "dbname": cfg["dbname"],
+                "databases": [
+                    {"port": item["port"], "dbname": item["dbname"]} for item in configs
+                ],
                 "user": cfg["user"],
             },
         }
