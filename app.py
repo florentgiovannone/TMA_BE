@@ -60,6 +60,23 @@ def _cors_allowed_origins() -> list[str]:
     return origins
 
 
+ARKIN_PUBLIC_HOST = "arkin.takemearound.gallery"
+_ARKIN_URL_HOST_REPLACEMENTS = (
+    ("arkingallery.netlify.app", ARKIN_PUBLIC_HOST),
+    ("www.arkingallery.netlify.app", f"www.{ARKIN_PUBLIC_HOST}"),
+)
+
+
+def _map_arkin_public_message(msg):
+    """Rewrite legacy Netlify hosts to the public Arkın domain in API responses."""
+    if msg is None or not isinstance(msg, str):
+        return msg
+    out = msg
+    for old_host, new_host in _ARKIN_URL_HOST_REPLACEMENTS:
+        out = out.replace(old_host, new_host)
+    return out
+
+
 def _origin_allowed(origin: str) -> bool:
     for pattern in _cors_allowed_origins():
         if ".*" in pattern:
@@ -124,6 +141,26 @@ def db_config():
         "user": os.getenv("PGUSER", "poise"),
         "password": os.getenv("PGPASSWORD", ""),
     }
+
+
+def db_configs():
+    """Primary PGPORT, plus PGPORT_EXTRA (default 5433) for a second SSH tunnel."""
+    primary = db_config()
+    configs = [primary]
+    extra_raw = os.getenv("PGPORT_EXTRA", "5433")
+    if not extra_raw or not extra_raw.strip():
+        return configs
+    for part in extra_raw.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        port = int(part)
+        if any(cfg["port"] == port for cfg in configs):
+            continue
+        extra = dict(primary)
+        extra["port"] = port
+        configs.append(extra)
+    return configs
 
 
 def _default_dashboard_password() -> str:
@@ -348,6 +385,7 @@ def _normalize_poise_row(row: dict) -> dict:
     )
     if msg is not None and not isinstance(msg, str):
         msg = str(msg)
+    msg = _map_arkin_public_message(msg)
 
     return {
         "int_id": iid,
@@ -385,17 +423,20 @@ def _parse_limit_offset() -> tuple[int, int]:
     return limit, offset
 
 
-def query_poise_log_items(limit: int, offset: int):
-    """Returns (list of row dicts, None) or (None, db_error_line)."""
+def _query_poise_log_on(cfg: dict, limit: int, offset: int):
+    """Returns (list of row dicts, None) or (None, db_error_line) for one database."""
     try:
-        conn = psycopg2.connect(**db_config())
+        conn = psycopg2.connect(**cfg)
         visitor_registry = _ensure_visitor_registry_table(conn)
         meta_cur = conn.cursor()
         cols = _fetch_poise_log_columns(meta_cur)
         meta_cur.close()
         if not cols:
             conn.close()
-            return None, "table poise_log not found in current_schema() or has no columns"
+            return (
+                None,
+                "table poise_log not found in current_schema() or has no columns",
+            )
 
         order_col = next(
             (c for c in ("int_id", "id", "log_id") if c in cols),
@@ -422,19 +463,52 @@ def query_poise_log_items(limit: int, offset: int):
     except psycopg2.Error as exc:
         return None, str(exc).splitlines()[0][:250]
 
-    data = [_normalize_poise_row(dict(r)) for r in rows]
-    return data, None
+    return [_normalize_poise_row(dict(r)) for r in rows], None
+
+
+def query_poise_log_items(limit: int, offset: int):
+    """Merge poise_log from every configured localhost port, newest first.
+
+    Returns (rows, None) when at least one database answers. If another port
+    fails, rows are still returned and the warning is the second value.
+    Returns (None, error) only when every database fails.
+    """
+    configs = db_configs()
+    per_source = limit + offset
+    merged: list[dict] = []
+    errors: list[str] = []
+    for index, cfg in enumerate(configs):
+        rows, err = _query_poise_log_on(cfg, per_source, 0)
+        if err is not None:
+            errors.append(f"port {cfg['port']}: {err}")
+            continue
+        if index > 0:
+            for row in rows:
+                iid = row.get("int_id")
+                if isinstance(iid, int):
+                    row["int_id"] = iid + index * 1_000_000_000
+        merged.extend(rows)
+
+    if not merged:
+        return None, "; ".join(errors) if errors else "no database configured"
+
+    merged.sort(key=lambda row: row.get("dtm_timestamp") or "", reverse=True)
+    page = merged[offset : offset + limit]
+    warning = "; ".join(errors) if errors else None
+    return page, warning
 
 
 def _items_response():
     """Build JSON response for poise_log rows (200, or 200 with empty list + X-DB-Error)."""
     limit, offset = _parse_limit_offset()
     data, err = query_poise_log_items(limit, offset)
-    if err is not None:
+    if data is None:
         response = jsonify([])
-        response.headers["X-DB-Error"] = err
+        response.headers["X-DB-Error"] = err or "database query failed"
         return response, 200
     response = jsonify(data)
+    if err:
+        response.headers["X-DB-Error"] = err
     response.headers["X-Poise-Limit"] = str(limit)
     response.headers["X-Poise-Offset"] = str(offset)
     response.headers["X-Poise-Returned"] = str(len(data))
@@ -443,13 +517,15 @@ def _items_response():
 
 @app.get("/api/health")
 def health():
-    cfg = db_config()
+    configs = db_configs()
+    cfg = configs[0]
     return jsonify(
         {
             "status": "ok",
             "db": {
                 "host": cfg["host"],
                 "port": cfg["port"],
+                "ports": [item["port"] for item in configs],
                 "dbname": cfg["dbname"],
                 "user": cfg["user"],
             },
@@ -479,9 +555,11 @@ def get_items_secure():
 
 
 if __name__ == "__main__":
-    cfg = db_config()
+    configs = db_configs()
+    cfg = configs[0]
+    ports = ",".join(str(item["port"]) for item in configs)
     print(
         "Starting API with DB config "
-        f"host={cfg['host']} port={cfg['port']} dbname={cfg['dbname']} user={cfg['user']}"
+        f"host={cfg['host']} ports={ports} dbname={cfg['dbname']} user={cfg['user']}"
     )
     app.run(host="127.0.0.1", port=int(os.getenv("PORT", "5050")), debug=True)
