@@ -1,3 +1,4 @@
+import threading
 from datetime import timedelta
 
 import psycopg2
@@ -99,3 +100,58 @@ def test_find_pair_prefers_a_confirmed_row_over_an_unconfirmed_one(store):
     assert pair["id"] == confirmed_id
     assert pair["status"] == "confirmed"
     assert store.get_registration(unconfirmed_id)["status"] == "unconfirmed"
+
+
+def test_confirm_subtracts_one_and_a_second_hash_lookup_is_invalid(store):
+    store.set_stock("the-star-of-bethlehem", 2)
+    registration_id = store.insert_unconfirmed(VALUES, "73a370509b33f7d64369bf097335b57c4021bd28e33a3f12c1b622fd62222374")
+    assert store.confirm("73a370509b33f7d64369bf097335b57c4021bd28e33a3f12c1b622fd62222374") == "confirmed"
+    row = store.get_registration(registration_id)
+    assert row["status"] == "confirmed"
+    assert row["token_hash"] is None
+    assert row["confirmed_at"] is not None
+    assert store.get_artwork("the-star-of-bethlehem")["stock"] == 1
+    assert store.confirm("73a370509b33f7d64369bf097335b57c4021bd28e33a3f12c1b622fd62222374") == "invalid"
+    assert store.get_artwork("the-star-of-bethlehem")["stock"] == 1
+
+
+def test_confirm_of_an_unknown_or_expired_token_is_invalid(store):
+    registration_id = store.insert_unconfirmed(VALUES, "73a370509b33f7d64369bf097335b57c4021bd28e33a3f12c1b622fd62222374")
+    store.set_stock("the-star-of-bethlehem", 1)
+    store.expire_for_tests(registration_id)
+    assert store.confirm("73a370509b33f7d64369bf097335b57c4021bd28e33a3f12c1b622fd62222374") == "invalid"
+    assert store.confirm("missing") == "invalid"
+    assert store.get_artwork("the-star-of-bethlehem")["stock"] == 1
+
+
+def test_confirm_with_no_stock_leaves_the_token_in_place(store):
+    registration_id = store.insert_unconfirmed(VALUES, "73a370509b33f7d64369bf097335b57c4021bd28e33a3f12c1b622fd62222374")
+    assert store.confirm("73a370509b33f7d64369bf097335b57c4021bd28e33a3f12c1b622fd62222374") == "unavailable"
+    row = store.get_registration(registration_id)
+    assert row["status"] == "unconfirmed"
+    assert row["token_hash"] == "73a370509b33f7d64369bf097335b57c4021bd28e33a3f12c1b622fd62222374"
+    assert store.get_artwork("the-star-of-bethlehem")["stock"] == 0
+    store.set_stock("the-star-of-bethlehem", 1)
+    assert store.confirm("73a370509b33f7d64369bf097335b57c4021bd28e33a3f12c1b622fd62222374") == "confirmed"
+
+
+def test_two_confirmations_cannot_take_the_last_piece(store):
+    store.set_stock("the-star-of-bethlehem", 1)
+    store.insert_unconfirmed(VALUES, "73a370509b33f7d64369bf097335b57c4021bd28e33a3f12c1b622fd62222374")
+    other = {**VALUES, "email": "grace@example.com"}
+    store.insert_unconfirmed(other, "68240addda41562dabc703d040452cbd977e8e52035a4addb58a447b3468caad")
+    results = []
+
+    def confirm(token_hash: str) -> None:
+        results.append(store.confirm(token_hash))
+
+    threads = [
+        threading.Thread(target=confirm, args=("73a370509b33f7d64369bf097335b57c4021bd28e33a3f12c1b622fd62222374",)),
+        threading.Thread(target=confirm, args=("68240addda41562dabc703d040452cbd977e8e52035a4addb58a447b3468caad",)),
+    ]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    assert sorted(results) == ["confirmed", "unavailable"]
+    assert store.get_artwork("the-star-of-bethlehem")["stock"] == 0

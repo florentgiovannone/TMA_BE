@@ -8,6 +8,10 @@ from psycopg2.extras import RealDictCursor
 SCHEMA = Path(__file__).with_name("schema.sql").read_text()
 
 
+class _StockUnavailable(Exception):
+    pass
+
+
 class Store:
     def __init__(self, database_url: str, sslmode: str):
         self._database_url = database_url
@@ -184,3 +188,49 @@ class Store:
         with self._session() as conn:
             with conn.cursor() as cur:
                 cur.execute("DELETE FROM registrations WHERE id = %s", (registration_id,))
+
+    def confirm(self, token_hash: str) -> str:
+        conn = self._connect()
+        try:
+            with conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        """
+                        SELECT id, artwork_slug
+                        FROM registrations
+                        WHERE token_hash = %s
+                          AND status = 'unconfirmed'
+                          AND expires_at > now()
+                        FOR UPDATE
+                        """,
+                        (token_hash,),
+                    )
+                    row = cur.fetchone()
+                    if row is None:
+                        return "invalid"
+                    cur.execute(
+                        """
+                        UPDATE artworks
+                        SET stock = stock - 1
+                        WHERE slug = %s AND stock > 0
+                        RETURNING stock
+                        """,
+                        (row["artwork_slug"],),
+                    )
+                    if cur.fetchone() is None:
+                        raise _StockUnavailable()
+                    cur.execute(
+                        """
+                        UPDATE registrations
+                        SET status = 'confirmed',
+                            confirmed_at = now(),
+                            token_hash = NULL
+                        WHERE id = %s
+                        """,
+                        (row["id"],),
+                    )
+            return "confirmed"
+        except _StockUnavailable:
+            return "unavailable"
+        finally:
+            conn.close()
