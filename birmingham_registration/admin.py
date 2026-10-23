@@ -19,6 +19,17 @@ def _csv_safe_cell(value) -> str:
     return text
 
 
+def _phone_label(row: dict) -> str:
+    number = row.get("phone_number") or ""
+    if not number:
+        return ""
+    label = f"{row.get('phone_dial_code') or ''} {number}".strip()
+    extension = row.get("phone_extension") or ""
+    if extension:
+        label = f"{label} ext. {extension}"
+    return label
+
+
 def register_admin(application) -> None:
     settings = application.extensions["settings"]
     store = application.extensions["store"]
@@ -105,6 +116,7 @@ def register_admin(application) -> None:
                 "name",
                 "surname",
                 "email",
+                "phone",
                 "company",
                 "position",
                 "town",
@@ -119,6 +131,7 @@ def register_admin(application) -> None:
                     _csv_safe_cell(row["name"]),
                     _csv_safe_cell(row["surname"]),
                     _csv_safe_cell(row["email"]),
+                    _csv_safe_cell(_phone_label(row)),
                     _csv_safe_cell(row["company"]),
                     _csv_safe_cell(row["position"]),
                     _csv_safe_cell(row["town"]),

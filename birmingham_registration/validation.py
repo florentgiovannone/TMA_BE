@@ -1,6 +1,10 @@
 import re
 
+from birmingham_registration.countries import COUNTRY_NAMES, DIAL_CODES
+
 EMAIL = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+PHONE_DIGITS = re.compile(r"^[0-9]{4,15}$")
+EXTENSION_DIGITS = re.compile(r"^[0-9]{1,10}$")
 LIMITS = {
     "name": 100,
     "surname": 100,
@@ -17,7 +21,7 @@ BLANK = {
     "company": "Enter your company.",
     "position": "Enter your position.",
     "town": "Enter the town.",
-    "country": "Enter the country.",
+    "country": "Choose a country.",
 }
 ARTWORK_SLUGS = ("the-star-of-bethlehem", "the-golden-boys")
 
@@ -38,10 +42,37 @@ def validate_registration(payload: object) -> dict:
             else:
                 values[field] = text.lower()
             continue
+        if field == "country":
+            if text not in COUNTRY_NAMES:
+                errors[field] = BLANK[field]
+            else:
+                values[field] = text
+            continue
         if not text:
             errors[field] = BLANK[field]
         else:
             values[field] = text
+    dial = data.get("phoneDialCode", "")
+    dial = dial.strip() if isinstance(dial, str) else ""
+    raw_phone = data.get("phoneNumber", "")
+    phone = raw_phone.strip() if isinstance(raw_phone, str) else ""
+    digits = re.sub(r"[\s-]", "", phone)
+    if not digits:
+        values["phone_dial_code"] = ""
+        values["phone_number"] = ""
+    elif not PHONE_DIGITS.match(digits):
+        errors["phoneNumber"] = "Enter a valid phone number."
+    elif dial not in DIAL_CODES:
+        errors["phoneDialCode"] = "Choose a country code."
+    else:
+        values["phone_dial_code"] = dial
+        values["phone_number"] = digits
+    raw_extension = data.get("phoneExtension", "")
+    extension = raw_extension.strip() if isinstance(raw_extension, str) else ""
+    if extension and not EXTENSION_DIGITS.match(extension):
+        errors["phoneExtension"] = "Enter a valid extension."
+    else:
+        values["phone_extension"] = extension
     raw_slug = data.get("artworkSlug", "")
     slug = raw_slug.strip() if isinstance(raw_slug, str) else ""
     if slug not in ARTWORK_SLUGS:

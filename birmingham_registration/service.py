@@ -24,11 +24,14 @@ def submit_registration(store, mailer, limiter, settings, payload, ip: str) -> t
         return 400, {"ok": False, "errors": checked["errors"]}
     values = checked["values"]
     existing = store.find_pair(values["email"], values["artwork_slug"])
-    if existing and existing["status"] == "confirmed":
+    if existing and (
+        existing["status"] == "confirmed"
+        or existing["artwork_slug"] != values["artwork_slug"]
+    ):
         return 409, {
             "ok": False,
             "error": "already_registered",
-            "message": "This email is already registered for that artwork.",
+            "message": "This email is already registered.",
         }
     artwork = store.get_artwork(values["artwork_slug"])
     if artwork is None or artwork["stock"] <= 0:

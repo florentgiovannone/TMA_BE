@@ -1,7 +1,7 @@
 import logging
 from datetime import timedelta
 
-from flask import Flask, jsonify, make_response, render_template, request
+from flask import Flask, jsonify, make_response, render_template, request, send_from_directory
 from flask_cors import CORS
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -43,6 +43,10 @@ def create_app(settings, store, mailer, limiter) -> Flask:
     application.extensions["store"] = store
     application.extensions["mailer"] = mailer
     application.extensions["limiter"] = limiter
+
+    @application.get("/favicon.ico")
+    def favicon():
+        return send_from_directory(application.static_folder, "favicon.png", mimetype="image/png")
 
     @application.get("/api/health")
     def health():

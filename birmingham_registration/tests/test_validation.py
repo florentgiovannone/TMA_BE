@@ -8,6 +8,9 @@ VALID = {
     "position": "Curator",
     "town": "Birmingham",
     "country": "United Kingdom",
+    "phoneDialCode": "+44",
+    "phoneNumber": "7700900123",
+    "phoneExtension": "12",
     "artworkSlug": "the-star-of-bethlehem",
     "consent": True,
 }
@@ -19,6 +22,9 @@ def test_accepts_a_complete_registration_and_lowercases_email():
     assert result["values"]["email"] == "ada@example.com"
     assert result["values"]["artwork_slug"] == "the-star-of-bethlehem"
     assert validate_registration({**VALID, "artworkSlug": "the-golden-boys"})["ok"] is True
+    without_phone = validate_registration({**VALID, "phoneNumber": "", "phoneDialCode": ""})
+    assert without_phone["ok"] is True
+    assert without_phone["values"]["phone_number"] == ""
 
 
 def test_reports_every_blank_field_and_a_missing_checkbox():
@@ -32,7 +38,7 @@ def test_reports_every_blank_field_and_a_missing_checkbox():
             "company": "Enter your company.",
             "position": "Enter your position.",
             "town": "Enter the town.",
-            "country": "Enter the country.",
+            "country": "Choose a country.",
             "artworkSlug": "Choose an artwork.",
             "consent": "Confirm that we may store these details.",
         },

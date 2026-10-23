@@ -2,40 +2,283 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Registration admin</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}?v=2" sizes="192x192" />
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}?v=2" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}?v=10" />
   </head>
   <body>
-    <main>
-      <h1>Confirmed registrations</h1>
-      <form method="post" action="/admin/logout">
-        <button type="submit">Sign out</button>
-      </form>
-      <p><a href="/admin/registrations.csv">Export CSV</a></p>
-      <h2>Stock</h2>
-      {% for artwork in artworks %}
-      <form method="post" action="/admin/artworks/{{ artwork.slug }}/stock">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
-        <label>
-          {{ artwork.title }}
-          <input type="number" min="0" name="stock" value="{{ artwork.stock }}" />
-        </label>
-        <button type="submit">Save stock</button>
-      </form>
-      {% endfor %}
-      <h2>People</h2>
-      {% for row in registrations %}
-      <article>
-        <p>{{ row.name }} {{ row.surname }} — {{ row.email }}</p>
-        <p>{{ row.company }}, {{ row.position }}, {{ row.town }}, {{ row.country }}</p>
-        <p>{{ row.artwork_title }} — {{ row.confirmed_at }}</p>
-        <form method="post" action="/admin/registrations/{{ row.id }}/delete">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
-          <button type="submit">Delete</button>
+    <header class="band">
+      <div class="band-inner">
+        {% include "_mark.html" %}
+        <form method="post" action="/admin/logout">
+          <button type="submit">Sign out</button>
         </form>
-      </article>
-      {% else %}
-      <p>No confirmed registrations.</p>
-      {% endfor %}
+      </div>
+    </header>
+    <main class="wrap">
+      <p class="eyebrow">Birmingham Conference</p>
+      <h1>Confirmed registrations</h1>
+      <div class="toolbar">
+        <p class="lede">This page updates every 5 seconds.</p>
+        <a class="export" href="/admin/registrations.csv">Export CSV</a>
+      </div>
+      <h2>Stock</h2>
+      <div class="stock-grid" data-stock-grid>
+        {% for artwork in artworks %}
+        <article class="card" data-stock-card="{{ artwork.slug }}">
+          <form class="stock-form" method="post" action="/admin/artworks/{{ artwork.slug }}/stock">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+            <p class="stock-title">{{ artwork.title }}</p>
+            <p class="stock-value" data-stock-value>{{ artwork.stock }}</p>
+            <label class="stock-edit" hidden>
+              New stock
+              <input type="number" min="0" name="stock" value="{{ artwork.stock }}" data-stock-input required />
+            </label>
+          </form>
+        </article>
+        {% endfor %}
+      </div>
+      <div class="stock-actions">
+        <button class="save" type="button" data-edit>Edit</button>
+        <button class="save" type="button" data-save hidden>Save stock</button>
+        <button class="cancel" type="button" data-cancel hidden>Cancel</button>
+      </div>
+      <h2>People</h2>
+      <div class="table-scroll">
+        <table class="people">
+          <thead>
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Surname</th>
+              <th scope="col">Email</th>
+              <th scope="col">Phone</th>
+              <th scope="col">Company</th>
+              <th scope="col">Position</th>
+              <th scope="col">Town</th>
+              <th scope="col">Country</th>
+              <th scope="col">Artwork</th>
+              <th scope="col">Confirmed</th>
+              <th scope="col"><span class="sr">Remove</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in registrations %}
+            <tr>
+              <td>{{ row.name }}</td>
+              <td>{{ row.surname }}</td>
+              <td>{{ row.email }}</td>
+              <td>
+                {% if row.phone_number %}
+                {{ row.phone_dial_code }} {{ row.phone_number }}{% if row.phone_extension %} ext. {{ row.phone_extension }}{% endif %}
+                {% endif %}
+              </td>
+              <td>{{ row.company }}</td>
+              <td>{{ row.position }}</td>
+              <td>{{ row.town }}</td>
+              <td>{{ row.country }}</td>
+              <td>{{ row.artwork_title }}</td>
+              <td>{{ row.confirmed_at.strftime("%d %b %Y, %H:%M") }}</td>
+              <td>
+                <form method="post" action="/admin/registrations/{{ row.id }}/delete">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+                  <button class="delete" type="submit">Delete</button>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="11">No confirmed registrations.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </main>
+    <dialog class="modal" data-stock-modal aria-labelledby="stock-modal-title">
+      {% include "_mark.html" %}
+      <p class="eyebrow">Birmingham Conference</p>
+      <h2 id="stock-modal-title">Confirm stock</h2>
+      <ul class="modal-list" data-stock-summary></ul>
+      <div class="modal-actions">
+        <button class="save" type="button" data-stock-confirm>Confirm</button>
+        <button class="cancel" type="button" data-stock-dismiss>Cancel</button>
+      </div>
+    </dialog>
+    <dialog class="modal" data-delete-modal aria-labelledby="delete-modal-title">
+      {% include "_mark.html" %}
+      <p class="eyebrow">Birmingham Conference</p>
+      <h2 id="delete-modal-title">Remove registration</h2>
+      <ul class="modal-list" data-delete-summary></ul>
+      <div class="modal-actions">
+        <button class="save" type="button" data-delete-confirm>Confirm</button>
+        <button class="cancel" type="button" data-delete-dismiss>Cancel</button>
+      </div>
+    </dialog>
+    <script>
+      var stockGrid = document.querySelector("[data-stock-grid]")
+      var edit = document.querySelector("[data-edit]")
+      var save = document.querySelector("[data-save]")
+      var cancel = document.querySelector("[data-cancel]")
+      var modal = document.querySelector("[data-stock-modal]")
+      var summary = document.querySelector("[data-stock-summary]")
+      var confirmStock = document.querySelector("[data-stock-confirm]")
+      var dismissStock = document.querySelector("[data-stock-dismiss]")
+
+      function stockCards() {
+        return Array.prototype.slice.call(document.querySelectorAll("[data-stock-card]"))
+      }
+
+      function closeEdit() {
+        delete stockGrid.dataset.editing
+        stockCards().forEach(function (card) {
+          var value = card.querySelector("[data-stock-value]")
+          card.querySelector("[data-stock-input]").value = value.textContent.trim()
+          value.hidden = false
+          card.querySelector(".stock-edit").hidden = true
+        })
+        edit.hidden = false
+        save.hidden = true
+        cancel.hidden = true
+      }
+
+      edit.addEventListener("click", function () {
+        stockGrid.dataset.editing = "true"
+        var first = null
+        stockCards().forEach(function (card) {
+          var value = card.querySelector("[data-stock-value]")
+          var input = card.querySelector("[data-stock-input]")
+          input.value = value.textContent.trim()
+          value.hidden = true
+          card.querySelector(".stock-edit").hidden = false
+          if (!first) first = input
+        })
+        edit.hidden = true
+        save.hidden = false
+        cancel.hidden = false
+        if (first) first.focus()
+      })
+      cancel.addEventListener("click", closeEdit)
+      save.addEventListener("click", function () {
+        var invalid = stockCards().find(function (card) {
+          return !card.querySelector("[data-stock-input]").checkValidity()
+        })
+        if (invalid) {
+          invalid.querySelector("[data-stock-input]").reportValidity()
+          return
+        }
+        summary.replaceChildren()
+        stockCards().forEach(function (card) {
+          var item = document.createElement("li")
+          var name = document.createElement("span")
+          var amount = document.createElement("strong")
+          name.textContent = card.querySelector(".stock-title").textContent.trim()
+          amount.textContent = card.querySelector("[data-stock-input]").value
+          item.append(name, amount)
+          summary.append(item)
+        })
+        modal.showModal()
+      })
+      dismissStock.addEventListener("click", function () {
+        modal.close()
+      })
+      confirmStock.addEventListener("click", async function () {
+        confirmStock.disabled = true
+        try {
+          for (var card of stockCards()) {
+            var form = card.querySelector("form")
+            await fetch(form.action, { method: "POST", body: new FormData(form) })
+          }
+        } finally {
+          confirmStock.disabled = false
+          modal.close()
+          closeEdit()
+          refreshLive()
+        }
+      })
+
+      var deleteModal = document.querySelector("[data-delete-modal]")
+      var deleteSummary = document.querySelector("[data-delete-summary]")
+      var confirmDelete = document.querySelector("[data-delete-confirm]")
+      var dismissDelete = document.querySelector("[data-delete-dismiss]")
+      var pendingDelete = null
+
+      function fillSummary(list, rows) {
+        list.replaceChildren()
+        rows.forEach(function (row) {
+          var item = document.createElement("li")
+          var name = document.createElement("span")
+          var amount = document.createElement("strong")
+          name.textContent = row[0]
+          amount.textContent = row[1]
+          item.append(name, amount)
+          list.append(item)
+        })
+      }
+
+      document.addEventListener("submit", function (event) {
+        var form = event.target
+        if (!form.action || !form.action.endsWith("/delete")) return
+        event.preventDefault()
+        var cells = form.closest("tr").querySelectorAll("td")
+        pendingDelete = form
+        fillSummary(deleteSummary, [
+          ["Name", cells[0].textContent.trim() + " " + cells[1].textContent.trim()],
+          ["Email", cells[2].textContent.trim()],
+          ["Artwork", cells[8].textContent.trim()]
+        ])
+        deleteModal.showModal()
+      })
+      dismissDelete.addEventListener("click", function () {
+        pendingDelete = null
+        deleteModal.close()
+      })
+      deleteModal.addEventListener("close", function () {
+        pendingDelete = null
+      })
+      confirmDelete.addEventListener("click", async function () {
+        if (!pendingDelete) return
+        var form = pendingDelete
+        confirmDelete.disabled = true
+        try {
+          await fetch(form.action, { method: "POST", body: new FormData(form) })
+        } finally {
+          confirmDelete.disabled = false
+          pendingDelete = null
+          deleteModal.close()
+          refreshLive()
+        }
+      })
+
+      async function refreshLive() {
+        if (document.querySelector("dialog[open]")) return
+        var editingStock = Boolean(stockGrid.dataset.editing)
+        try {
+          var response = await fetch("/admin", { headers: { Accept: "text/html" } })
+          if (!response.ok || !response.url.endsWith("/admin")) {
+            window.location.href = "/admin/login"
+            return
+          }
+          var doc = new DOMParser().parseFromString(await response.text(), "text/html")
+          var nextPeople = doc.querySelector(".table-scroll")
+          var people = document.querySelector(".table-scroll")
+          if (nextPeople && people) people.replaceWith(nextPeople)
+          if (editingStock) return
+          doc.querySelectorAll("[data-stock-card]").forEach(function (nextCard) {
+            var slug = nextCard.getAttribute("data-stock-card")
+            var current = document.querySelector('[data-stock-card="' + slug + '"]')
+            if (!current || current.dataset.editing) return
+            var nextValue = nextCard.querySelector("[data-stock-value]").textContent.trim()
+            current.querySelector("[data-stock-value]").textContent = nextValue
+            current.querySelector("[data-stock-input]").value = nextValue
+          })
+        } catch (error) {
+          return
+        }
+      }
+
+      setInterval(refreshLive, 5000)
+    </script>
   </body>
 </html>

@@ -22,12 +22,16 @@ CREATE TABLE IF NOT EXISTS registrations (
   token_hash text CHECK (token_hash IS NULL OR token_hash ~ '^[0-9a-f]{64}$')
 );
 
+ALTER TABLE registrations ADD COLUMN IF NOT EXISTS phone_dial_code varchar(8);
+ALTER TABLE registrations ADD COLUMN IF NOT EXISTS phone_number varchar(20);
+ALTER TABLE registrations ADD COLUMN IF NOT EXISTS phone_extension varchar(10);
+
 CREATE UNIQUE INDEX IF NOT EXISTS registrations_one_confirmed
-  ON registrations (email, artwork_slug)
+  ON registrations (email)
   WHERE status = 'confirmed';
 
 CREATE UNIQUE INDEX IF NOT EXISTS registrations_one_unconfirmed
-  ON registrations (email, artwork_slug)
+  ON registrations (email)
   WHERE status = 'unconfirmed';
 
 CREATE UNIQUE INDEX IF NOT EXISTS registrations_token_hash

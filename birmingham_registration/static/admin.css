@@ -1,0 +1,334 @@
+:root {
+  --cream: #f4f0e8;
+  --paper: #fbf9f6;
+  --navy: #0e2347;
+  --gold: #b08958;
+  --ink: #243044;
+  --hero: #f7f3ea;
+  --line: #e4d8c8;
+}
+
+* { box-sizing: border-box; }
+
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: "Avenir Next", Avenir, Helvetica, sans-serif;
+}
+
+a { color: var(--navy); }
+
+.band {
+  background: var(--navy);
+  color: var(--hero);
+}
+
+.band-inner,
+.wrap {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+}
+
+.band-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 0;
+}
+
+.mark {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  font-family: Georgia, serif;
+  letter-spacing: 0.18em;
+  font-size: 13px;
+}
+
+.brand-mark {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  color: var(--gold);
+}
+
+.brand-words span { color: var(--gold); }
+
+.band button,
+.ghost {
+  border: 1px solid #d7c4a4;
+  background: transparent;
+  color: var(--hero);
+  font: inherit;
+  font-size: 14px;
+  padding: 8px 14px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.wrap { padding: 32px 0 64px; }
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--gold);
+  letter-spacing: 0.08em;
+  font-size: 13px;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0 0 8px;
+  color: var(--navy);
+  font-family: Georgia, serif;
+  font-weight: normal;
+  font-size: 36px;
+  line-height: 1.15;
+}
+
+.lede {
+  margin: 0 0 28px;
+  color: var(--ink);
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.export {
+  border-bottom: 1px solid var(--gold);
+  text-decoration: none;
+  color: var(--navy);
+  padding-bottom: 2px;
+}
+
+h2 {
+  margin: 0 0 12px;
+  color: var(--navy);
+  font-family: Georgia, serif;
+  font-weight: normal;
+  font-size: 24px;
+}
+
+.stock-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.card,
+.person {
+  background: var(--paper);
+  border-top: 3px solid var(--gold);
+  padding: 18px 18px 16px;
+}
+
+.stock-form,
+.person form { margin: 0; }
+
+label {
+  display: block;
+  color: var(--navy);
+  font-size: 15px;
+}
+
+input[type="number"],
+input[type="password"] {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  background: white;
+  color: var(--navy);
+  font: inherit;
+  font-size: 16px;
+}
+
+.stock-title {
+  margin: 0;
+  color: var(--navy);
+  font-size: 16px;
+}
+
+.stock-value {
+  margin: 10px 0 0;
+  color: var(--navy);
+  font-family: Georgia, serif;
+  font-size: 40px;
+  line-height: 1;
+}
+
+.stock-edit { margin-top: 12px; }
+
+.stock-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 36px;
+}
+
+button.cancel {
+  margin-top: 12px;
+  border: 0;
+  background: transparent;
+  color: var(--navy);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  padding: 12px 0;
+}
+
+button.save,
+button.sign-in {
+  margin-top: 12px;
+  border: 0;
+  background: var(--navy);
+  color: var(--hero);
+  font: inherit;
+  font-size: 15px;
+  padding: 12px 16px;
+  cursor: pointer;
+}
+
+.table-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  background: var(--paper);
+  border-top: 3px solid var(--gold);
+}
+
+.people {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.people th,
+.people td {
+  padding: 12px 14px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.people th {
+  color: var(--navy);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.people td:nth-child(8) {
+  color: var(--gold);
+}
+
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+button.delete {
+  border: 0;
+  background: transparent;
+  color: var(--navy);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.error {
+  margin: 0 0 16px;
+  color: #8a2b2b;
+}
+
+.login {
+  width: min(420px, calc(100% - 32px));
+  margin: 48px auto;
+  background: var(--paper);
+  border-top: 3px solid var(--gold);
+  padding: 28px 24px 24px;
+}
+
+.modal {
+  width: min(440px, calc(100% - 32px));
+  border: 0;
+  border-top: 3px solid var(--gold);
+  background: var(--paper);
+  color: var(--navy);
+  padding: 28px 24px 20px;
+  font: inherit;
+}
+
+.modal::backdrop {
+  background: rgba(14, 35, 71, 0.55);
+}
+
+.modal .mark {
+  color: var(--navy);
+  margin-bottom: 18px;
+}
+
+.modal h2 {
+  margin-bottom: 16px;
+  font-size: 32px;
+}
+
+.modal-list {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+}
+
+.modal-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.modal-list span,
+.modal-list strong {
+  overflow-wrap: anywhere;
+}
+
+.modal-list strong {
+  color: var(--navy);
+  font-family: Georgia, serif;
+  font-size: 22px;
+  font-weight: normal;
+  text-align: right;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.modal-actions button.cancel {
+  margin-top: 12px;
+}

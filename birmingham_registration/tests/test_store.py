@@ -12,6 +12,9 @@ VALUES = {
     "position": "Curator",
     "town": "Birmingham",
     "country": "United Kingdom",
+    "phone_dial_code": "+44",
+    "phone_number": "7700900123",
+    "phone_extension": "12",
     "artwork_slug": "the-star-of-bethlehem",
 }
 
@@ -61,7 +64,7 @@ def test_replace_updates_the_hash_and_keeps_one_unconfirmed_row(store):
 def test_purge_expired_deletes_only_the_expired_unconfirmed_row(store):
     grace = {**VALUES, "email": "grace@example.com"}
     star = {**grace, "artwork_slug": "the-star-of-bethlehem"}
-    golden = {**grace, "artwork_slug": "the-golden-boys"}
+    golden = {**VALUES, "email": "ada.other@example.com", "artwork_slug": "the-golden-boys"}
     expired_id = store.insert_unconfirmed(star, "73a370509b33f7d64369bf097335b57c4021bd28e33a3f12c1b622fd62222374")
     active_id = store.insert_unconfirmed(golden, "68240addda41562dabc703d040452cbd977e8e52035a4addb58a447b3468caad")
     store.expire_for_tests(expired_id)

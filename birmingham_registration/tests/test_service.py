@@ -25,6 +25,9 @@ PAYLOAD = {
     "position": "Curator",
     "town": "Birmingham",
     "country": "United Kingdom",
+    "phoneDialCode": "+44",
+    "phoneNumber": "7700900123",
+    "phoneExtension": "12",
     "artworkSlug": "the-star-of-bethlehem",
     "consent": True,
 }
@@ -147,6 +150,43 @@ def test_repeat_success_retires_the_previous_token(store):
     assert open_confirmation(store, first_token) == "invalid"
     assert open_confirmation(store, second_token) == "confirmed"
     assert store.get_artwork("the-star-of-bethlehem")["stock"] == 1
+
+
+def test_one_email_can_register_for_only_one_artwork(store):
+    store.set_stock("the-star-of-bethlehem", 2)
+    store.set_stock("the-golden-boys", 2)
+    mailer = FakeMailer()
+    submit_registration(store, mailer, AllowLimiter(), SETTINGS, PAYLOAD, "10.0.0.1")
+    pending = FakeMailer()
+    status, body = submit_registration(
+        store,
+        pending,
+        AllowLimiter(),
+        SETTINGS,
+        {**PAYLOAD, "artworkSlug": "the-golden-boys"},
+        "10.0.0.1",
+    )
+    assert status == 409
+    assert body == {
+        "ok": False,
+        "error": "already_registered",
+        "message": "This email is already registered.",
+    }
+    assert pending.sent == []
+    open_confirmation(store, mailer.sent[0][2].split("token=", 1)[1])
+    again = FakeMailer()
+    status, body = submit_registration(
+        store,
+        again,
+        AllowLimiter(),
+        SETTINGS,
+        {**PAYLOAD, "artworkSlug": "the-golden-boys"},
+        "10.0.0.1",
+    )
+    assert status == 409
+    assert body["error"] == "already_registered"
+    assert again.sent == []
+    assert store.get_artwork("the-golden-boys")["stock"] == 2
 
 
 def test_confirmed_pair_and_zero_stock_do_not_send_mail(store):

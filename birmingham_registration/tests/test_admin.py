@@ -75,6 +75,9 @@ def test_admin_lists_and_exports_only_confirmed_people(store):
             "position": "Guest",
             "town": "Birmingham",
             "country": "United Kingdom",
+            "phone_dial_code": "+44",
+            "phone_number": "7700900000",
+            "phone_extension": "",
             "artwork_slug": "the-golden-boys",
         },
         "923928026d5d143618c25a098db0c86677cc1994439d66ff8ed71904e10d8339",
@@ -96,13 +99,14 @@ def test_admin_lists_and_exports_only_confirmed_people(store):
     assert all(cell != FORMULA_NAME for row in rows[1:] for cell in row)
 
 
-def test_delete_removes_the_person_and_leaves_stock_alone(store):
+def test_delete_removes_the_person_and_returns_their_stock(store):
     store.set_stock("the-star-of-bethlehem", 2)
     mailer = FakeMailer()
     client = build(store, mailer).test_client()
     client.post("/api/registrations", json=PAYLOAD)
     token = mailer.sent[0][2].split("token=", 1)[1]
     client.get(f"/confirm?token={token}")
+    assert store.get_artwork("the-star-of-bethlehem")["stock"] == 1
     log_in(client)
     registration_id = store.list_confirmed()[0]["id"]
     page = client.get("/admin")
@@ -113,7 +117,8 @@ def test_delete_removes_the_person_and_leaves_stock_alone(store):
         follow_redirects=True,
     )
     assert store.list_confirmed() == []
-    assert store.get_artwork("the-star-of-bethlehem")["stock"] == 1
+    assert store.get_artwork("the-star-of-bethlehem")["stock"] == 2
+    assert store.get_artwork("the-golden-boys")["stock"] == 0
 
 
 def test_stock_rejects_a_negative_number_and_accepts_zero(store):

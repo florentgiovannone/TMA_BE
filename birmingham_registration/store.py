@@ -41,8 +41,34 @@ class Store:
             with conn.cursor() as cur:
                 for statement in SCHEMA.split(";"):
                     sql = statement.strip()
+                    if "registrations_one_confirmed" in sql or "registrations_one_unconfirmed" in sql:
+                        continue
                     if sql:
                         cur.execute(sql)
+                self._ensure_one_registration_per_email(cur)
+
+    def _ensure_one_registration_per_email(self, cur) -> None:
+        cur.execute("SAVEPOINT email_unique")
+        try:
+            cur.execute("DROP INDEX IF EXISTS registrations_one_confirmed")
+            cur.execute("DROP INDEX IF EXISTS registrations_one_unconfirmed")
+            cur.execute(
+                """
+                CREATE UNIQUE INDEX registrations_one_confirmed
+                ON registrations (email)
+                WHERE status = 'confirmed'
+                """
+            )
+            cur.execute(
+                """
+                CREATE UNIQUE INDEX registrations_one_unconfirmed
+                ON registrations (email)
+                WHERE status = 'unconfirmed'
+                """
+            )
+        except psycopg2.Error:
+            cur.execute("ROLLBACK TO SAVEPOINT email_unique")
+        cur.execute("RELEASE SAVEPOINT email_unique")
 
     def reset_for_tests(self) -> None:
         with self._session() as conn:
@@ -109,18 +135,18 @@ class Store:
                 cur.execute("SELECT * FROM registrations WHERE id = %s", (registration_id,))
                 return cur.fetchone()
 
-    def find_pair(self, email: str, artwork_slug: str) -> dict | None:
+    def find_pair(self, email: str, _artwork_slug: str) -> dict | None:
         with self._session() as conn:
             with conn.cursor() as cur:
                 cur.execute(
                     """
                     SELECT id, status, token_hash, artwork_slug
                     FROM registrations
-                    WHERE email = %s AND artwork_slug = %s
+                    WHERE email = %s
                     ORDER BY CASE status WHEN 'confirmed' THEN 0 ELSE 1 END
                     LIMIT 1
                     """,
-                    (email, artwork_slug),
+                    (email,),
                 )
                 return cur.fetchone()
 
@@ -131,11 +157,12 @@ class Store:
                 cur.execute(
                     """
                     INSERT INTO registrations (
-                      id, name, surname, email, company, position, town, country,
+                      id, name, surname, email, phone_dial_code, phone_number,
+                      phone_extension, company, position, town, country,
                       artwork_slug, status, consent_at, created_at, confirmed_at,
                       expires_at, token_hash
                     ) VALUES (
-                      %s, %s, %s, %s, %s, %s, %s, %s,
+                      %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                       %s, 'unconfirmed', now(), now(), NULL,
                       now() + interval '5 minutes', %s
                     )
@@ -145,6 +172,9 @@ class Store:
                         values["name"],
                         values["surname"],
                         values["email"],
+                        values["phone_dial_code"] or None,
+                        values["phone_number"] or None,
+                        values["phone_extension"] or None,
                         values["company"],
                         values["position"],
                         values["town"],
@@ -164,6 +194,9 @@ class Store:
                       name = %s,
                       surname = %s,
                       email = %s,
+                      phone_dial_code = %s,
+                      phone_number = %s,
+                      phone_extension = %s,
                       company = %s,
                       position = %s,
                       town = %s,
@@ -179,6 +212,9 @@ class Store:
                         values["name"],
                         values["surname"],
                         values["email"],
+                        values["phone_dial_code"] or None,
+                        values["phone_number"] or None,
+                        values["phone_extension"] or None,
                         values["company"],
                         values["position"],
                         values["town"],
@@ -199,17 +235,35 @@ class Store:
         with self._session() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "DELETE FROM registrations WHERE id = %s AND status = 'confirmed'",
+                    """
+                    DELETE FROM registrations
+                    WHERE id = %s AND status = 'confirmed'
+                    RETURNING artwork_slug
+                    """,
                     (registration_id,),
                 )
-                return cur.rowcount == 1
+                row = cur.fetchone()
+                if row is None:
+                    return False
+                cur.execute(
+                    """
+                    UPDATE artworks
+                    SET stock = stock + 1
+                    WHERE slug = %s AND stock < 2147483647
+                    """,
+                    (row["artwork_slug"],),
+                )
+                if cur.rowcount != 1:
+                    raise _StockUnavailable()
+                return True
 
     def list_confirmed(self) -> list[dict]:
         with self._session() as conn:
             with conn.cursor() as cur:
                 cur.execute(
                     """
-                    SELECT r.id, r.name, r.surname, r.email, r.company, r.position,
+                    SELECT r.id, r.name, r.surname, r.email, r.phone_dial_code,
+                           r.phone_number, r.phone_extension, r.company, r.position,
                            r.town, r.country, a.title AS artwork_title, r.confirmed_at
                     FROM registrations r
                     JOIN artworks a ON a.slug = r.artwork_slug
@@ -262,5 +316,7 @@ class Store:
             return "confirmed"
         except _StockUnavailable:
             return "unavailable"
+        except psycopg2.errors.UniqueViolation:
+            return "invalid"
         finally:
             conn.close()
