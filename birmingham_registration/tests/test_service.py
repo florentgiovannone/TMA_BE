@@ -1,5 +1,7 @@
 import logging
 
+import psycopg2.errors
+
 from birmingham_registration.config import load_settings
 from birmingham_registration.service import open_confirmation, submit_registration
 
@@ -42,6 +44,37 @@ class FakeMailer:
 class AllowLimiter:
     def allow_registration(self, email, ip):
         return True
+
+
+class InsertUniqueViolationStore:
+    def __init__(self, inner):
+        self._inner = inner
+
+    def __getattr__(self, name):
+        return getattr(self._inner, name)
+
+    def insert_unconfirmed(self, values, token_hash):
+        raise psycopg2.errors.UniqueViolation()
+
+
+def test_insert_unique_violation_returns_please_retry_without_email(store):
+    store.set_stock("the-star-of-bethlehem", 1)
+    mailer = FakeMailer()
+    status, body = submit_registration(
+        InsertUniqueViolationStore(store),
+        mailer,
+        AllowLimiter(),
+        SETTINGS,
+        PAYLOAD,
+        "10.0.0.1",
+    )
+    assert status == 409
+    assert body == {
+        "ok": False,
+        "error": "please_retry",
+        "message": "Please try again later.",
+    }
+    assert mailer.sent == []
 
 
 def test_first_submit_saves_a_hashed_token_and_emails_the_raw_token(store, caplog):

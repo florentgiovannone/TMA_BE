@@ -62,7 +62,11 @@ def submit_registration(store, mailer, limiter, settings, payload, ip: str) -> t
     try:
         registration_id = store.insert_unconfirmed(values, token_digest)
     except psycopg2.errors.UniqueViolation:
-        return 201, {"ok": True}
+        return 409, {
+            "ok": False,
+            "error": "please_retry",
+            "message": "Please try again later.",
+        }
     try:
         mailer.send_confirmation(values["email"], artwork["title"], confirm_url)
     except Exception:
