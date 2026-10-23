@@ -149,6 +149,23 @@ def test_stock_rejects_a_negative_number_and_accepts_zero(store):
     assert store.get_artwork("the-golden-boys")["stock"] == before_superscript
 
 
+def test_stock_above_postgres_integer_max_does_not_crash_and_leaves_stock_unchanged(
+    store,
+):
+    client = build(store).test_client()
+    log_in(client)
+    page = client.get("/admin")
+    csrf = page.get_data(as_text=True).split('name="csrf_token" value="', 1)[1].split('"', 1)[0]
+    before = store.get_artwork("the-golden-boys")["stock"]
+    response = client.post(
+        "/admin/artworks/the-golden-boys/stock",
+        data={"csrf_token": csrf, "stock": "2147483648"},
+        follow_redirects=True,
+    )
+    assert response.status_code != 500
+    assert store.get_artwork("the-golden-boys")["stock"] == before
+
+
 def test_huge_digit_stock_value_does_not_crash_and_leaves_stock_unchanged(store):
     client = build(store).test_client()
     log_in(client)

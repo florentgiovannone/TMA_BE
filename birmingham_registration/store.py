@@ -66,7 +66,12 @@ class Store:
                 return cur.fetchone()
 
     def set_stock(self, slug: str, stock: int) -> bool:
-        if not isinstance(stock, int) or isinstance(stock, bool) or stock < 0:
+        if (
+            not isinstance(stock, int)
+            or isinstance(stock, bool)
+            or stock < 0
+            or stock > 2147483647
+        ):
             return False
         with self._session() as conn:
             with conn.cursor() as cur:
