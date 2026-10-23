@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$root"
+if [[ ! -x .venv-birmingham/bin/python ]]; then
+  python3 -m venv .venv-birmingham
+fi
+.venv-birmingham/bin/pip install -q -r birmingham_registration/requirements.txt
+exec .venv-birmingham/bin/python -m birmingham_registration
