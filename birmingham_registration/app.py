@@ -1,8 +1,10 @@
+import logging
 from datetime import timedelta
 
 from flask import Flask, jsonify, make_response, render_template, request
 from flask_cors import CORS
 
+from birmingham_registration.redact import RedactTokenFilter
 from birmingham_registration.service import open_confirmation, submit_registration
 
 CONFIRM_MESSAGES = {
@@ -12,7 +14,16 @@ CONFIRM_MESSAGES = {
 }
 
 
+def _attach_redact_filter(logger_name: str) -> None:
+    logger = logging.getLogger(logger_name)
+    if not any(isinstance(item, RedactTokenFilter) for item in logger.filters):
+        logger.addFilter(RedactTokenFilter())
+
+
 def create_app(settings, store, mailer, limiter) -> Flask:
+    _attach_redact_filter("werkzeug")
+    _attach_redact_filter("birmingham_registration")
+
     application = Flask(__name__)
     application.config.update(
         SECRET_KEY=settings.secret_key,
