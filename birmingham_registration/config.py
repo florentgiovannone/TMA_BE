@@ -25,10 +25,18 @@ class Settings:
     privacy_contact_email: str
     cors_origins: list[str]
     port: int
+    trusted_proxy_hops: int
 
     @property
     def secure_cookies(self) -> bool:
         return self.public_base_url.startswith("https://")
+
+
+def _non_negative_int_setting(environ: Mapping[str, str], name: str, default: str) -> int:
+    raw = environ.get(name, default).strip() or default
+    if not raw.isascii() or not raw.isdigit():
+        raise RuntimeError(f"{name} must be a non-negative integer")
+    return int(raw)
 
 
 def load_settings(environ: Mapping[str, str]) -> Settings:
@@ -54,4 +62,5 @@ def load_settings(environ: Mapping[str, str]) -> Settings:
         privacy_contact_email=environ["PRIVACY_CONTACT_EMAIL"].strip(),
         cors_origins=origins,
         port=int(environ.get("PORT", "5051").strip() or "5051"),
+        trusted_proxy_hops=_non_negative_int_setting(environ, "TRUSTED_PROXY_HOPS", "0"),
     )

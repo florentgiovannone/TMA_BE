@@ -87,6 +87,7 @@ def register_admin(application) -> None:
     @application.get("/admin")
     @require_admin
     def admin_home():
+        store.purge_expired()
         return render_template(
             "admin_home.html",
             csrf_token=current_csrf(),

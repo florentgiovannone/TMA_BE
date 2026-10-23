@@ -21,6 +21,7 @@ def test_load_settings_applies_defaults_and_https_cookie_flag():
         "http://127.0.0.1:5173",
     ]
     assert settings.port == 5051
+    assert settings.trusted_proxy_hops == 0
     assert settings.public_base_url == "https://interest.example.com"
     assert settings.secure_cookies is True
 
@@ -35,3 +36,13 @@ def test_load_settings_strips_the_public_url_and_lists_every_missing_name():
     settings = load_settings({**REQUIRED, "PUBLIC_BASE_URL": "http://127.0.0.1:5051/"})
     assert settings.public_base_url == "http://127.0.0.1:5051"
     assert settings.secure_cookies is False
+
+
+def test_load_settings_reads_trusted_proxy_hops():
+    settings = load_settings({**REQUIRED, "TRUSTED_PROXY_HOPS": "2"})
+    assert settings.trusted_proxy_hops == 2
+
+
+def test_load_settings_rejects_invalid_trusted_proxy_hops():
+    with pytest.raises(RuntimeError):
+        load_settings({**REQUIRED, "TRUSTED_PROXY_HOPS": "no"})

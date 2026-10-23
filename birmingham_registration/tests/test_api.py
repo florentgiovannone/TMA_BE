@@ -1,6 +1,7 @@
 from birmingham_registration.app import create_app
 from birmingham_registration.rate_limit import MemoryRateLimiter
 from birmingham_registration.tests.test_service import PAYLOAD, SETTINGS, FakeMailer
+from birmingham_registration.tests.test_store import VALUES
 
 
 def build(store, mailer=None, limiter=None):
@@ -12,6 +13,25 @@ def build(store, mailer=None, limiter=None):
     )
     application.config.update(TESTING=True)
     return application
+
+
+def test_artworks_purge_removes_expired_unconfirmed_rows_but_keeps_confirmed(store):
+    expired_id = store.insert_unconfirmed(
+        VALUES,
+        "73a370509b33f7d64369bf097335b57c4021bd28e33a3f12c1b622fd62222374",
+    )
+    store.expire_for_tests(expired_id)
+    confirmed = {**VALUES, "email": "grace@example.com", "artwork_slug": "the-golden-boys"}
+    confirmed_id = store.insert_unconfirmed(
+        confirmed,
+        "68240addda41562dabc703d040452cbd977e8e52035a4addb58a447b3468caad",
+    )
+    store.set_stock("the-golden-boys", 1)
+    assert store.confirm("68240addda41562dabc703d040452cbd977e8e52035a4addb58a447b3468caad") == "confirmed"
+    client = build(store).test_client()
+    assert client.get("/api/artworks").status_code == 200
+    assert store.get_registration(expired_id) is None
+    assert store.get_registration(confirmed_id) is not None
 
 
 def test_health_and_artworks_hide_nothing_and_expose_the_privacy_contact(store):

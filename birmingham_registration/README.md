@@ -6,7 +6,7 @@ Separate Flask service for the Birmingham register-interest form. It has its own
 
 1. Create a Postgres database, for example `createdb birmingham_registration`.
 2. Copy `.env.example` to `.env` and set `DATABASE_URL`, `RESEND_API_KEY`, `RESEND_FROM`, `ADMIN_PASSWORD`, `SECRET_KEY`, `PUBLIC_BASE_URL`, and `PRIVACY_CONTACT_EMAIL`.
-3. In production set `DATABASE_SSLMODE=require` and use an HTTPS `PUBLIC_BASE_URL`.
+3. In production behind one HTTPS proxy, set `TRUSTED_PROXY_HOPS=1`, `DATABASE_SSLMODE=require`, and use an HTTPS `PUBLIC_BASE_URL`. Rate limits and admin lockout are in-memory and assume one process.
 4. From `TMA_backend`, run `./run-birmingham`.
 
 The service listens on port 5051. Health: `GET /api/health`. Admin: `/admin/login`.

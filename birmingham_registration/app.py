@@ -3,6 +3,7 @@ from datetime import timedelta
 
 from flask import Flask, jsonify, make_response, render_template, request
 from flask_cors import CORS
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from birmingham_registration.admin import register_admin
 from birmingham_registration.redact import RedactTokenFilter
@@ -49,6 +50,7 @@ def create_app(settings, store, mailer, limiter) -> Flask:
 
     @application.get("/api/artworks")
     def artworks():
+        store.purge_expired()
         return jsonify(
             {
                 "privacyContact": settings.privacy_contact_email,
@@ -84,5 +86,13 @@ def create_app(settings, store, mailer, limiter) -> Flask:
         return response
 
     register_admin(application)
+
+    if settings.trusted_proxy_hops > 0:
+        hops = settings.trusted_proxy_hops
+        application.wsgi_app = ProxyFix(
+            application.wsgi_app,
+            x_for=hops,
+            x_proto=hops,
+        )
 
     return application
