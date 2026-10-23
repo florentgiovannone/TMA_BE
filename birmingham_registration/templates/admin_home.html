@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Registration admin</title>
+  </head>
+  <body>
+    <main>
+      <h1>Confirmed registrations</h1>
+      <form method="post" action="/admin/logout">
+        <button type="submit">Sign out</button>
+      </form>
+      <p><a href="/admin/registrations.csv">Export CSV</a></p>
+      <h2>Stock</h2>
+      {% for artwork in artworks %}
+      <form method="post" action="/admin/artworks/{{ artwork.slug }}/stock">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+        <label>
+          {{ artwork.title }}
+          <input type="number" min="0" name="stock" value="{{ artwork.stock }}" />
+        </label>
+        <button type="submit">Save stock</button>
+      </form>
+      {% endfor %}
+      <h2>People</h2>
+      {% for row in registrations %}
+      <article>
+        <p>{{ row.name }} {{ row.surname }} — {{ row.email }}</p>
+        <p>{{ row.company }}, {{ row.position }}, {{ row.town }}, {{ row.country }}</p>
+        <p>{{ row.artwork_title }} — {{ row.confirmed_at }}</p>
+        <form method="post" action="/admin/registrations/{{ row.id }}/delete">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+          <button type="submit">Delete</button>
+        </form>
+      </article>
+      {% else %}
+      <p>No confirmed registrations.</p>
+      {% endfor %}
+    </main>
+  </body>
+</html>

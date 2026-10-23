@@ -190,6 +190,15 @@ class Store:
             with conn.cursor() as cur:
                 cur.execute("DELETE FROM registrations WHERE id = %s", (registration_id,))
 
+    def delete_confirmed(self, registration_id: str) -> bool:
+        with self._session() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "DELETE FROM registrations WHERE id = %s AND status = 'confirmed'",
+                    (registration_id,),
+                )
+                return cur.rowcount == 1
+
     def list_confirmed(self) -> list[dict]:
         with self._session() as conn:
             with conn.cursor() as cur:
