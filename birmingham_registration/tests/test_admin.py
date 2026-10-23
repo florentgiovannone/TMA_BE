@@ -17,6 +17,31 @@ def log_in(client, password="a-long-password"):
     )
 
 
+def test_wrong_unicode_password_returns_incorrect_not_server_error(store):
+    client = build(store).test_client()
+    page = client.get("/admin/login")
+    token = page.get_data(as_text=True).split('name="csrf_token" value="', 1)[1].split('"', 1)[0]
+    response = client.post(
+        "/admin/login",
+        data={"password": "wröng", "csrf_token": token},
+    )
+    assert response.status_code == 401
+    assert b"The password is incorrect." in response.data
+    assert client.get("/admin").status_code == 302
+
+
+def test_non_ascii_csrf_token_returns_expired_form_not_server_error(store):
+    client = build(store).test_client()
+    page = client.get("/admin/login")
+    token = page.get_data(as_text=True).split('name="csrf_token" value="', 1)[1].split('"', 1)[0]
+    response = client.post(
+        "/admin/login",
+        data={"password": "a-long-password", "csrf_token": token + "é"},
+    )
+    assert response.status_code == 400
+    assert b"The form expired. Try again." in response.data
+
+
 def test_wrong_password_does_not_open_the_admin_list(store):
     client = build(store).test_client()
     page = log_in(client, password="wrong")
@@ -122,3 +147,18 @@ def test_stock_rejects_a_negative_number_and_accepts_zero(store):
     )
     assert response.status_code != 500
     assert store.get_artwork("the-golden-boys")["stock"] == before_superscript
+
+
+def test_huge_digit_stock_value_does_not_crash_and_leaves_stock_unchanged(store):
+    client = build(store).test_client()
+    log_in(client)
+    page = client.get("/admin")
+    csrf = page.get_data(as_text=True).split('name="csrf_token" value="', 1)[1].split('"', 1)[0]
+    before = store.get_artwork("the-golden-boys")["stock"]
+    response = client.post(
+        "/admin/artworks/the-golden-boys/stock",
+        data={"csrf_token": csrf, "stock": "9" * 5000},
+        follow_redirects=True,
+    )
+    assert response.status_code != 500
+    assert store.get_artwork("the-golden-boys")["stock"] == before

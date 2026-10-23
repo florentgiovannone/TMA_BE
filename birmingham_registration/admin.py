@@ -8,6 +8,10 @@ from flask import make_response, redirect, render_template, request, session, ur
 _CSV_FORMULA_PREFIXES = frozenset("=+-@\t\r")
 
 
+def _constant_time_str_equal(left: str, right: str) -> bool:
+    return secrets.compare_digest(left.encode(), right.encode())
+
+
 def _csv_safe_cell(value) -> str:
     text = value if isinstance(value, str) else str(value)
     if text and text[0] in _CSV_FORMULA_PREFIXES:
@@ -30,7 +34,7 @@ def register_admin(application) -> None:
     def csrf_ok() -> bool:
         expected = session.get("csrf_token", "")
         sent = request.form.get("csrf_token", "")
-        return bool(expected) and secrets.compare_digest(sent, expected)
+        return bool(expected) and _constant_time_str_equal(sent, expected)
 
     def require_admin(view):
         @wraps(view)
@@ -61,7 +65,7 @@ def register_admin(application) -> None:
                 error="Try again later.",
             ), 429
         password = request.form.get("password", "")
-        if not secrets.compare_digest(password, settings.admin_password):
+        if not _constant_time_str_equal(password, settings.admin_password):
             limiter.record_login_failure(ip)
             return render_template(
                 "admin_login.html",
@@ -140,5 +144,8 @@ def register_admin(application) -> None:
         if csrf_ok():
             raw = request.form.get("stock", "")
             if raw and raw.isascii() and raw.isdigit():
-                store.set_stock(slug, int(raw))
+                try:
+                    store.set_stock(slug, int(raw))
+                except ValueError:
+                    pass
         return redirect(url_for("admin_home"))
