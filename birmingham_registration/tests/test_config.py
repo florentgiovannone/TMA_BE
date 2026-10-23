@@ -1,0 +1,37 @@
+import pytest
+
+from birmingham_registration.config import load_settings
+
+REQUIRED = {
+    "DATABASE_URL": "postgresql://localhost/birmingham_registration",
+    "RESEND_API_KEY": "re_test",
+    "RESEND_FROM": "interest@example.com",
+    "ADMIN_PASSWORD": "a-long-password",
+    "SECRET_KEY": "a-long-secret",
+    "PUBLIC_BASE_URL": "https://interest.example.com",
+    "PRIVACY_CONTACT_EMAIL": "privacy@example.com",
+}
+
+
+def test_load_settings_applies_defaults_and_https_cookie_flag():
+    settings = load_settings(REQUIRED)
+    assert settings.database_sslmode == "prefer"
+    assert settings.cors_origins == [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
+    assert settings.port == 5051
+    assert settings.public_base_url == "https://interest.example.com"
+    assert settings.secure_cookies is True
+
+
+def test_load_settings_strips_the_public_url_and_lists_every_missing_name():
+    with pytest.raises(RuntimeError) as error:
+        load_settings({"PUBLIC_BASE_URL": "http://127.0.0.1:5051/"})
+    message = str(error.value)
+    for name in REQUIRED:
+        if name != "PUBLIC_BASE_URL":
+            assert name in message
+    settings = load_settings({**REQUIRED, "PUBLIC_BASE_URL": "http://127.0.0.1:5051/"})
+    assert settings.public_base_url == "http://127.0.0.1:5051"
+    assert settings.secure_cookies is False
