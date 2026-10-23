@@ -27,7 +27,7 @@ def test_migrate_seeds_both_artworks_at_zero_and_keeps_stock(store):
 
 
 def test_insert_expires_in_five_minutes_and_purge_removes_only_old_unconfirmed_rows(store):
-    registration_id = store.insert_unconfirmed(VALUES, "hash-1")
+    registration_id = store.insert_unconfirmed(VALUES, "73a370509b33f7d64369bf097335b57c4021bd28e33a3f12c1b622fd62222374")
     row = store.get_registration(registration_id)
     assert row["expires_at"] - row["created_at"] == timedelta(minutes=5)
     assert row["status"] == "unconfirmed"
@@ -37,17 +37,17 @@ def test_insert_expires_in_five_minutes_and_purge_removes_only_old_unconfirmed_r
 
 
 def test_a_second_unconfirmed_insert_for_the_same_pair_is_rejected(store):
-    store.insert_unconfirmed(VALUES, "hash-1")
+    store.insert_unconfirmed(VALUES, "73a370509b33f7d64369bf097335b57c4021bd28e33a3f12c1b622fd62222374")
     with pytest.raises(psycopg2.errors.UniqueViolation):
-        store.insert_unconfirmed(VALUES, "hash-2")
+        store.insert_unconfirmed(VALUES, "68240addda41562dabc703d040452cbd977e8e52035a4addb58a447b3468caad")
 
 
 def test_replace_updates_the_hash_and_keeps_one_unconfirmed_row(store):
-    registration_id = store.insert_unconfirmed(VALUES, "hash-1")
+    registration_id = store.insert_unconfirmed(VALUES, "73a370509b33f7d64369bf097335b57c4021bd28e33a3f12c1b622fd62222374")
     replaced = {**VALUES, "town": "London"}
-    store.replace_unconfirmed(registration_id, replaced, "hash-2")
+    store.replace_unconfirmed(registration_id, replaced, "68240addda41562dabc703d040452cbd977e8e52035a4addb58a447b3468caad")
     row = store.get_registration(registration_id)
     assert row["town"] == "London"
-    assert row["token_hash"] == "hash-2"
+    assert row["token_hash"] == "68240addda41562dabc703d040452cbd977e8e52035a4addb58a447b3468caad"
     assert row["status"] == "unconfirmed"
     assert store.find_pair("ada@example.com", "the-star-of-bethlehem")["id"] == registration_id

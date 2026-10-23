@@ -39,6 +39,22 @@ class Store:
                     sql = statement.strip()
                     if sql:
                         cur.execute(sql)
+                cur.execute(
+                    """
+                    DELETE FROM registrations
+                    WHERE token_hash IS NOT NULL
+                      AND token_hash !~ '^[0-9a-f]{64}$'
+                    """
+                )
+                cur.execute(
+                    "ALTER TABLE registrations DROP CONSTRAINT IF EXISTS registrations_token_hash_sha256"
+                )
+                cur.execute(
+                    """
+                    ALTER TABLE registrations ADD CONSTRAINT registrations_token_hash_sha256
+                    CHECK (token_hash IS NULL OR token_hash ~ '^[0-9a-f]{64}$')
+                    """
+                )
 
     def reset_for_tests(self) -> None:
         with self._session() as conn:

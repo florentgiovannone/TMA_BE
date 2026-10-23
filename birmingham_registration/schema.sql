@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS registrations (
   created_at timestamptz NOT NULL,
   confirmed_at timestamptz,
   expires_at timestamptz NOT NULL,
-  token_hash text
+  token_hash text CHECK (token_hash IS NULL OR token_hash ~ '^[0-9a-f]{64}$')
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS registrations_one_confirmed
