@@ -189,6 +189,21 @@ class Store:
             with conn.cursor() as cur:
                 cur.execute("DELETE FROM registrations WHERE id = %s", (registration_id,))
 
+    def list_confirmed(self) -> list[dict]:
+        with self._session() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT r.id, r.name, r.surname, r.email, r.company, r.position,
+                           r.town, r.country, a.title AS artwork_title, r.confirmed_at
+                    FROM registrations r
+                    JOIN artworks a ON a.slug = r.artwork_slug
+                    WHERE r.status = 'confirmed'
+                    ORDER BY r.confirmed_at DESC
+                    """
+                )
+                return list(cur.fetchall())
+
     def confirm(self, token_hash: str) -> str:
         conn = self._connect()
         try:

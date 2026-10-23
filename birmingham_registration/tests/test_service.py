@@ -1,0 +1,140 @@
+import logging
+
+from birmingham_registration.config import load_settings
+from birmingham_registration.service import open_confirmation, submit_registration
+
+SETTINGS = load_settings(
+    {
+        "DATABASE_URL": "postgresql://localhost/birmingham_registration_test",
+        "RESEND_API_KEY": "re_test",
+        "RESEND_FROM": "interest@example.com",
+        "ADMIN_PASSWORD": "a-long-password",
+        "SECRET_KEY": "a-long-secret",
+        "PUBLIC_BASE_URL": "http://127.0.0.1:5051",
+        "PRIVACY_CONTACT_EMAIL": "privacy@example.com",
+    }
+)
+
+PAYLOAD = {
+    "name": "Ada",
+    "surname": "Lovelace",
+    "email": "Ada@Example.com",
+    "company": "Analytical Engines",
+    "position": "Curator",
+    "town": "Birmingham",
+    "country": "United Kingdom",
+    "artworkSlug": "the-star-of-bethlehem",
+    "consent": True,
+}
+
+
+class FakeMailer:
+    def __init__(self, fail=False):
+        self.fail = fail
+        self.sent = []
+
+    def send_confirmation(self, to_email, artwork_title, confirm_url):
+        if self.fail:
+            raise RuntimeError("resend down")
+        self.sent.append((to_email, artwork_title, confirm_url))
+
+
+class AllowLimiter:
+    def allow_registration(self, email, ip):
+        return True
+
+
+def test_first_submit_saves_a_hashed_token_and_emails_the_raw_token(store, caplog):
+    store.set_stock("the-star-of-bethlehem", 2)
+    mailer = FakeMailer()
+    caplog.set_level(logging.INFO)
+    status, body = submit_registration(
+        store, mailer, AllowLimiter(), SETTINGS, PAYLOAD, "10.0.0.1"
+    )
+    assert status == 201
+    assert body == {"ok": True}
+    assert mailer.sent[0][0] == "ada@example.com"
+    assert "token=" in mailer.sent[0][2]
+    token = mailer.sent[0][2].split("token=", 1)[1]
+    assert token not in caplog.text
+    assert "ada@example.com" not in caplog.text
+    assert open_confirmation(store, token) == "confirmed"
+    assert store.get_artwork("the-star-of-bethlehem")["stock"] == 1
+
+
+def test_first_send_failure_leaves_no_row(store):
+    store.set_stock("the-star-of-bethlehem", 1)
+    status, body = submit_registration(
+        store, FakeMailer(fail=True), AllowLimiter(), SETTINGS, PAYLOAD, "10.0.0.1"
+    )
+    assert status == 502
+    assert body["error"] == "email_failed"
+    assert store.find_pair("ada@example.com", "the-star-of-bethlehem") is None
+    assert store.get_artwork("the-star-of-bethlehem")["stock"] == 1
+
+
+def test_repeat_send_failure_keeps_the_previous_link(store):
+    store.set_stock("the-star-of-bethlehem", 1)
+    first = FakeMailer()
+    submit_registration(store, first, AllowLimiter(), SETTINGS, PAYLOAD, "10.0.0.1")
+    first_token = first.sent[0][2].split("token=", 1)[1]
+    status, body = submit_registration(
+        store, FakeMailer(fail=True), AllowLimiter(), SETTINGS, PAYLOAD, "10.0.0.1"
+    )
+    assert status == 502
+    assert open_confirmation(store, first_token) == "confirmed"
+
+
+def test_repeat_success_retires_the_previous_token(store):
+    store.set_stock("the-star-of-bethlehem", 2)
+    first = FakeMailer()
+    submit_registration(store, first, AllowLimiter(), SETTINGS, PAYLOAD, "10.0.0.1")
+    first_token = first.sent[0][2].split("token=", 1)[1]
+    second = FakeMailer()
+    submit_registration(store, second, AllowLimiter(), SETTINGS, PAYLOAD, "10.0.0.1")
+    second_token = second.sent[0][2].split("token=", 1)[1]
+    assert open_confirmation(store, first_token) == "invalid"
+    assert open_confirmation(store, second_token) == "confirmed"
+    assert store.get_artwork("the-star-of-bethlehem")["stock"] == 1
+
+
+def test_confirmed_pair_and_zero_stock_do_not_send_mail(store):
+    store.set_stock("the-star-of-bethlehem", 1)
+    mailer = FakeMailer()
+    submit_registration(store, mailer, AllowLimiter(), SETTINGS, PAYLOAD, "10.0.0.1")
+    open_confirmation(store, mailer.sent[0][2].split("token=", 1)[1])
+    status, body = submit_registration(
+        store, FakeMailer(), AllowLimiter(), SETTINGS, PAYLOAD, "10.0.0.1"
+    )
+    assert status == 409
+    assert body["error"] == "already_registered"
+    other = {**PAYLOAD, "email": "grace@example.com"}
+    status, body = submit_registration(
+        store, FakeMailer(), AllowLimiter(), SETTINGS, other, "10.0.0.1"
+    )
+    assert status == 409
+    assert body["error"] == "unavailable"
+
+
+class DenyLimiter:
+    def allow_registration(self, email, ip):
+        return False
+
+
+def test_over_the_limit_saves_nothing(store):
+    store.set_stock("the-star-of-bethlehem", 1)
+    status, body = submit_registration(
+        store, FakeMailer(), DenyLimiter(), SETTINGS, PAYLOAD, "10.0.0.1"
+    )
+    assert status == 429
+    assert body["error"] == "too_many_requests"
+    assert store.find_pair("ada@example.com", "the-star-of-bethlehem") is None
+
+
+def test_blank_fields_save_nothing(store):
+    status, body = submit_registration(
+        store, FakeMailer(), AllowLimiter(), SETTINGS, {}, "10.0.0.1"
+    )
+    assert status == 400
+    assert body["errors"]["name"] == "Enter your name."
+    assert store.list_confirmed() == []
