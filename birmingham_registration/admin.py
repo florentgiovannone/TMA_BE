@@ -5,6 +5,15 @@ from functools import wraps
 
 from flask import make_response, redirect, render_template, request, session, url_for
 
+_CSV_FORMULA_PREFIXES = frozenset("=+-@\t\r")
+
+
+def _csv_safe_cell(value) -> str:
+    text = value if isinstance(value, str) else str(value)
+    if text and text[0] in _CSV_FORMULA_PREFIXES:
+        return f"'{text}"
+    return text
+
 
 def register_admin(application) -> None:
     settings = application.extensions["settings"]
@@ -102,15 +111,15 @@ def register_admin(application) -> None:
         for row in store.list_confirmed():
             writer.writerow(
                 [
-                    row["name"],
-                    row["surname"],
-                    row["email"],
-                    row["company"],
-                    row["position"],
-                    row["town"],
-                    row["country"],
-                    row["artwork_title"],
-                    row["confirmed_at"].isoformat(),
+                    _csv_safe_cell(row["name"]),
+                    _csv_safe_cell(row["surname"]),
+                    _csv_safe_cell(row["email"]),
+                    _csv_safe_cell(row["company"]),
+                    _csv_safe_cell(row["position"]),
+                    _csv_safe_cell(row["town"]),
+                    _csv_safe_cell(row["country"]),
+                    _csv_safe_cell(row["artwork_title"]),
+                    _csv_safe_cell(row["confirmed_at"].isoformat()),
                 ]
             )
         response = make_response(buffer.getvalue())
@@ -130,6 +139,6 @@ def register_admin(application) -> None:
     def update_stock(slug: str):
         if csrf_ok():
             raw = request.form.get("stock", "")
-            if raw.isdigit():
+            if raw and raw.isascii() and raw.isdigit():
                 store.set_stock(slug, int(raw))
         return redirect(url_for("admin_home"))
