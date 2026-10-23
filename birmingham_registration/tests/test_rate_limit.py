@@ -14,6 +14,16 @@ def test_registration_limits_are_five_per_email_and_thirty_per_ip():
     assert limiter.allow_registration("ada@example.com", "10.0.0.1") is True
 
 
+def test_a_denied_sixth_email_request_does_not_extend_the_hourly_lockout():
+    now = [0.0]
+    limiter = MemoryRateLimiter(clock=lambda: now[0])
+    for _ in range(5):
+        assert limiter.allow_registration("ada@example.com", "10.0.0.1") is True
+    assert limiter.allow_registration("ada@example.com", "10.0.0.2") is False
+    now[0] += 3601
+    assert limiter.allow_registration("ada@example.com", "10.0.0.1") is True
+
+
 def test_five_failed_logins_pause_that_ip_for_fifteen_minutes():
     now = [0.0]
     limiter = MemoryRateLimiter(clock=lambda: now[0])

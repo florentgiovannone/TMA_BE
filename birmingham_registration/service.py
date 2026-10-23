@@ -50,7 +50,13 @@ def submit_registration(store, mailer, limiter, settings, payload, ip: str) -> t
                 "error": "email_failed",
                 "message": "We could not send the confirmation email. Nothing was saved.",
             }
-        store.replace_unconfirmed(existing["id"], values, token_digest)
+        if not store.replace_unconfirmed(existing["id"], values, token_digest):
+            LOGGER.info("confirmation email failed id=%s", existing["id"])
+            return 502, {
+                "ok": False,
+                "error": "email_failed",
+                "message": "Please try again later.",
+            }
         LOGGER.info("registration replaced id=%s", existing["id"])
         return 201, {"ok": True}
     try:
@@ -60,7 +66,10 @@ def submit_registration(store, mailer, limiter, settings, payload, ip: str) -> t
     try:
         mailer.send_confirmation(values["email"], artwork["title"], confirm_url)
     except Exception:
-        store.delete_registration(registration_id)
+        try:
+            store.delete_registration(registration_id)
+        except Exception:
+            pass
         LOGGER.info("confirmation email failed id=%s", registration_id)
         return 502, {
             "ok": False,

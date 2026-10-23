@@ -150,7 +150,7 @@ class Store:
                 )
         return registration_id
 
-    def replace_unconfirmed(self, registration_id: str, values: dict, token_hash: str) -> None:
+    def replace_unconfirmed(self, registration_id: str, values: dict, token_hash: str) -> bool:
         with self._session() as conn:
             with conn.cursor() as cur:
                 cur.execute(
@@ -183,6 +183,7 @@ class Store:
                         registration_id,
                     ),
                 )
+                return cur.rowcount == 1
 
     def delete_registration(self, registration_id: str) -> None:
         with self._session() as conn:

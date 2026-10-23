@@ -73,6 +73,24 @@ def test_first_send_failure_leaves_no_row(store):
     assert store.get_artwork("the-star-of-bethlehem")["stock"] == 1
 
 
+def test_repeat_replace_miss_returns_502_and_keeps_the_previous_link(store, monkeypatch):
+    store.set_stock("the-star-of-bethlehem", 1)
+    first = FakeMailer()
+    submit_registration(store, first, AllowLimiter(), SETTINGS, PAYLOAD, "10.0.0.1")
+    first_token = first.sent[0][2].split("token=", 1)[1]
+    monkeypatch.setattr(store, "replace_unconfirmed", lambda *args, **kwargs: False)
+    status, body = submit_registration(
+        store, FakeMailer(), AllowLimiter(), SETTINGS, PAYLOAD, "10.0.0.1"
+    )
+    assert status == 502
+    assert body == {
+        "ok": False,
+        "error": "email_failed",
+        "message": "Please try again later.",
+    }
+    assert open_confirmation(store, first_token) == "confirmed"
+
+
 def test_repeat_send_failure_keeps_the_previous_link(store):
     store.set_stock("the-star-of-bethlehem", 1)
     first = FakeMailer()

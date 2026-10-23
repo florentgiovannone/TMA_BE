@@ -21,8 +21,13 @@ class MemoryRateLimiter:
         bucket = buckets[key]
         while bucket and now - bucket[0] >= 3600:
             bucket.popleft()
+        if not bucket:
+            buckets.pop(key, None)
+        elif len(bucket) >= limit:
+            return False
+        bucket = buckets[key]
         bucket.append(now)
-        return len(bucket) <= limit
+        return True
 
     def allow_login(self, ip: str) -> bool:
         blocked_until = self._login_blocked_until.get(ip)

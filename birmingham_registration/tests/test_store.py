@@ -46,7 +46,11 @@ def test_a_second_unconfirmed_insert_for_the_same_pair_is_rejected(store):
 def test_replace_updates_the_hash_and_keeps_one_unconfirmed_row(store):
     registration_id = store.insert_unconfirmed(VALUES, "73a370509b33f7d64369bf097335b57c4021bd28e33a3f12c1b622fd62222374")
     replaced = {**VALUES, "town": "London"}
-    store.replace_unconfirmed(registration_id, replaced, "68240addda41562dabc703d040452cbd977e8e52035a4addb58a447b3468caad")
+    assert store.replace_unconfirmed(
+        registration_id,
+        replaced,
+        "68240addda41562dabc703d040452cbd977e8e52035a4addb58a447b3468caad",
+    )
     row = store.get_registration(registration_id)
     assert row["town"] == "London"
     assert row["token_hash"] == "68240addda41562dabc703d040452cbd977e8e52035a4addb58a447b3468caad"
