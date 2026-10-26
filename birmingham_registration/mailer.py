@@ -1,11 +1,9 @@
-import base64
 import html
+import smtplib
+from email.message import EmailMessage
 from pathlib import Path
 
-import resend
-
 _MARK_PNG = Path(__file__).with_name("static").joinpath("brand-mark.png").read_bytes()
-_MARK_B64 = base64.b64encode(_MARK_PNG).decode("ascii")
 
 
 def confirmation_subject(artwork_title: str) -> str:
@@ -48,7 +46,7 @@ def confirmation_html(artwork_title: str, confirm_url: str) -> str:
                     <table role="presentation" cellpadding="0" cellspacing="0">
                       <tr>
                         <td style="padding-right:12px;vertical-align:middle;">
-                          <img src="cid:brand-mark" width="28" height="28" alt="" style="display:block;border:0;" />
+                          <img src="cid:brand-mark.png" width="28" height="28" alt="" style="display:block;border:0;" />
                         </td>
                         <td style="vertical-align:middle;">
                           <p style="margin:0;font-family:Georgia,serif;font-size:13px;letter-spacing:0.18em;color:#f7f3ea;">TAKE <span style="color:#b08958;">ME</span> AROUND</p>
@@ -84,27 +82,56 @@ def confirmation_html(artwork_title: str, confirm_url: str) -> str:
 """
 
 
-class ResendMailer:
-    def __init__(self, api_key: str, from_address: str):
-        self._api_key = api_key
+_SMTP_HOSTS = {"smtp.mailgun.org", "smtp.eu.mailgun.org"}
+
+
+def mailgun_smtp_host(value: str) -> str:
+    host = value.strip().lower()
+    if host not in _SMTP_HOSTS:
+        raise RuntimeError("MAILGUN_SMTP_HOST must be smtp.mailgun.org or smtp.eu.mailgun.org")
+    return host
+
+
+def mailgun_smtp_port(value: str) -> int:
+    if value.strip() not in {"587", "465"}:
+        raise RuntimeError("MAILGUN_SMTP_PORT must be 587 or 465")
+    return int(value.strip())
+
+
+class MailgunMailer:
+    def __init__(self, host: str, port: int, username: str, password: str, from_address: str):
+        self._host = host
+        self._port = port
+        self._username = username
+        self._password = password
         self._from_address = from_address
 
     def send_confirmation(self, to_email: str, artwork_title: str, confirm_url: str) -> None:
-        resend.api_key = self._api_key
-        resend.Emails.send(
-            {
-                "from": self._from_address,
-                "to": [to_email],
-                "subject": confirmation_subject(artwork_title),
-                "text": confirmation_text(artwork_title, confirm_url),
-                "html": confirmation_html(artwork_title, confirm_url),
-                "attachments": [
-                    {
-                        "filename": "brand-mark.png",
-                        "content": _MARK_B64,
-                        "content_type": "image/png",
-                        "content_id": "brand-mark",
-                    }
-                ],
-            }
+        message = EmailMessage()
+        message["From"] = self._from_address
+        message["To"] = to_email
+        message["Subject"] = confirmation_subject(artwork_title)
+        message.set_content(confirmation_text(artwork_title, confirm_url))
+        message.add_alternative(confirmation_html(artwork_title, confirm_url), subtype="html")
+        html_part = message.get_payload()[1]
+        html_part.add_related(
+            _MARK_PNG,
+            maintype="image",
+            subtype="png",
+            cid="<brand-mark.png>",
+            filename="brand-mark.png",
+            disposition="inline",
         )
+        if self._port == 465:
+            client = smtplib.SMTP_SSL(self._host, self._port, timeout=20)
+        else:
+            client = smtplib.SMTP(self._host, self._port, timeout=20)
+        try:
+            client.ehlo()
+            if self._port != 465:
+                client.starttls()
+                client.ehlo()
+            client.login(self._username, self._password)
+            client.send_message(message)
+        finally:
+            client.quit()

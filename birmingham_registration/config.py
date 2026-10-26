@@ -1,11 +1,15 @@
 from dataclasses import dataclass
 from collections.abc import Mapping
 
+from birmingham_registration.mailer import mailgun_smtp_host, mailgun_smtp_port
+
 
 REQUIRED_NAMES = (
     "DATABASE_URL",
-    "RESEND_API_KEY",
-    "RESEND_FROM",
+    "MAILGUN_SMTP_HOST",
+    "MAILGUN_SMTP_USERNAME",
+    "MAILGUN_SMTP_PASSWORD",
+    "MAILGUN_FROM",
     "ADMIN_PASSWORD",
     "SECRET_KEY",
     "PUBLIC_BASE_URL",
@@ -17,8 +21,11 @@ REQUIRED_NAMES = (
 class Settings:
     database_url: str
     database_sslmode: str
-    resend_api_key: str
-    resend_from: str
+    mailgun_smtp_host: str
+    mailgun_smtp_port: int
+    mailgun_smtp_username: str
+    mailgun_smtp_password: str
+    mailgun_from: str
     admin_password: str
     secret_key: str
     public_base_url: str
@@ -54,8 +61,11 @@ def load_settings(environ: Mapping[str, str]) -> Settings:
     return Settings(
         database_url=environ["DATABASE_URL"].strip(),
         database_sslmode=environ.get("DATABASE_SSLMODE", "prefer").strip() or "prefer",
-        resend_api_key=environ["RESEND_API_KEY"].strip(),
-        resend_from=environ["RESEND_FROM"].strip(),
+        mailgun_smtp_host=mailgun_smtp_host(environ["MAILGUN_SMTP_HOST"]),
+        mailgun_smtp_port=mailgun_smtp_port(environ.get("MAILGUN_SMTP_PORT", "587")),
+        mailgun_smtp_username=environ["MAILGUN_SMTP_USERNAME"].strip(),
+        mailgun_smtp_password=environ["MAILGUN_SMTP_PASSWORD"].strip(),
+        mailgun_from=environ["MAILGUN_FROM"].strip(),
         admin_password=environ["ADMIN_PASSWORD"].strip(),
         secret_key=environ["SECRET_KEY"].strip(),
         public_base_url=environ["PUBLIC_BASE_URL"].strip().rstrip("/"),

@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 from birmingham_registration.app import create_app
 from birmingham_registration.config import load_settings
-from birmingham_registration.mailer import ResendMailer
+from birmingham_registration.mailer import MailgunMailer
 from birmingham_registration.rate_limit import MemoryRateLimiter
 from birmingham_registration.store import Store
 
@@ -16,7 +16,13 @@ store.migrate()
 application = create_app(
     settings,
     store,
-    ResendMailer(settings.resend_api_key, settings.resend_from),
+    MailgunMailer(
+        settings.mailgun_smtp_host,
+        settings.mailgun_smtp_port,
+        settings.mailgun_smtp_username,
+        settings.mailgun_smtp_password,
+        settings.mailgun_from,
+    ),
     MemoryRateLimiter(),
 )
 

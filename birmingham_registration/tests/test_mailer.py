@@ -1,4 +1,14 @@
-from birmingham_registration.mailer import confirmation_html, confirmation_subject, confirmation_text
+import pytest
+import smtplib
+
+from birmingham_registration.mailer import (
+    MailgunMailer,
+    confirmation_html,
+    confirmation_subject,
+    confirmation_text,
+    mailgun_smtp_host,
+    mailgun_smtp_port,
+)
 
 
 def test_confirmation_email_names_the_artwork_and_the_five_minute_limit():
@@ -18,7 +28,7 @@ def test_confirmation_email_uses_the_birmingham_layout():
     assert "TAKE" in page
     assert "ME" in page
     assert "AROUND" in page
-    assert 'src="cid:brand-mark"' in page
+    assert 'src="cid:brand-mark.png"' in page
     assert "Birmingham Conference" in page
     assert "Confirm my interest" in page
     assert 'href="https://interest.example.com/confirm?token=abc"' in page
@@ -28,3 +38,97 @@ def test_confirmation_email_uses_the_birmingham_layout():
     assert "#b08958" in page
     assert "color-scheme" in page
     assert "Ada" not in page
+
+
+def test_mailgun_sends_the_confirmation_over_smtp(monkeypatch):
+    captured = {}
+
+    class FakeSMTP:
+        def __init__(self, host, port, timeout):
+            captured["host"] = host
+            captured["port"] = port
+            captured["timeout"] = timeout
+
+        def ehlo(self):
+            return (250, b"ok")
+
+        def starttls(self):
+            captured["starttls"] = True
+
+        def login(self, username, password):
+            captured["username"] = username
+            captured["password"] = password
+
+        def send_message(self, message):
+            captured["message"] = message
+
+        def quit(self):
+            captured["quit"] = True
+
+    monkeypatch.setattr("birmingham_registration.mailer.smtplib.SMTP", FakeSMTP)
+    MailgunMailer(
+        "smtp.eu.mailgun.org",
+        587,
+        "confirmation@mg.example.com",
+        "secret",
+        "Interest <confirmation@mg.example.com>",
+    ).send_confirmation(
+        "ada@example.com",
+        "The Star of Bethlehem",
+        "https://interest.example.com/confirm?token=abc",
+    )
+    assert captured["host"] == "smtp.eu.mailgun.org"
+    assert captured["port"] == 587
+    assert captured["timeout"] == 20
+    assert captured["starttls"] is True
+    assert captured["username"] == "confirmation@mg.example.com"
+    assert captured["password"] == "secret"
+    assert captured["quit"] is True
+    message = captured["message"]
+    bodies = [
+        part.get_content()
+        for part in message.walk()
+        if part.get_content_maintype() == "text"
+    ]
+    body = "\n".join(bodies)
+    assert message["To"] == "ada@example.com"
+    assert message["Subject"] == "Confirm your interest in The Star of Bethlehem"
+    assert "cid:brand-mark.png" in body
+    assert "https://interest.example.com/confirm?token=abc" in body
+
+
+def test_mailgun_raises_when_smtp_rejects_the_login(monkeypatch):
+    class FakeSMTP:
+        def __init__(self, host, port, timeout):
+            pass
+
+        def ehlo(self):
+            return (250, b"ok")
+
+        def starttls(self):
+            return (220, b"ready")
+
+        def login(self, username, password):
+            raise smtplib.SMTPAuthenticationError(535, b"auth failed")
+
+        def quit(self):
+            pass
+
+    monkeypatch.setattr("birmingham_registration.mailer.smtplib.SMTP", FakeSMTP)
+    with pytest.raises(smtplib.SMTPAuthenticationError):
+        MailgunMailer(
+            "smtp.eu.mailgun.org",
+            587,
+            "confirmation@mg.example.com",
+            "secret",
+            "Interest <confirmation@mg.example.com>",
+        ).send_confirmation("ada@example.com", "The Golden Boys", "https://interest.example.com/confirm?token=abc")
+
+
+def test_mailgun_smtp_host_and_port_are_limited():
+    assert mailgun_smtp_host(" SMTP.EU.MAILGUN.ORG ") == "smtp.eu.mailgun.org"
+    assert mailgun_smtp_port("587") == 587
+    with pytest.raises(RuntimeError):
+        mailgun_smtp_host("smtp.example.com")
+    with pytest.raises(RuntimeError):
+        mailgun_smtp_port("25")

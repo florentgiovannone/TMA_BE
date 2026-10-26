@@ -5,7 +5,7 @@ Separate Flask service for the Birmingham register-interest form. It has its own
 ## Run
 
 1. Create a Postgres database, for example `createdb birmingham_registration`.
-2. Copy `.env.example` to `.env` and set `DATABASE_URL`, `RESEND_API_KEY`, `RESEND_FROM`, `ADMIN_PASSWORD`, `SECRET_KEY`, `PUBLIC_BASE_URL`, and `PRIVACY_CONTACT_EMAIL`.
+2. Copy `.env.example` to `.env` and set `DATABASE_URL`, `MAILGUN_SMTP_HOST`, `MAILGUN_SMTP_USERNAME`, `MAILGUN_SMTP_PASSWORD`, `MAILGUN_FROM`, `ADMIN_PASSWORD`, `SECRET_KEY`, `PUBLIC_BASE_URL`, and `PRIVACY_CONTACT_EMAIL`. An EU Mailgun account uses `smtp.eu.mailgun.org`. `MAILGUN_SMTP_PORT` defaults to `587`.
 3. In production behind one HTTPS proxy, set `TRUSTED_PROXY_HOPS=1`, `DATABASE_SSLMODE=require`, and use an HTTPS `PUBLIC_BASE_URL`. Rate limits and admin lockout are in-memory and assume one process.
 4. From `TMA_backend`, run `./run-birmingham`.
 
@@ -23,4 +23,4 @@ Copy `.env.test.example` to `.env.test` and point it at a database that is not t
 
 ## Check by hand
 
-Submit the Birmingham form, open the Resend link within 5 minutes, and sign in to the admin page.
+Submit the Birmingham form, open the confirmation link within 5 minutes, and sign in to the admin page.

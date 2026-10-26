@@ -8,8 +8,10 @@ from birmingham_registration.service import open_confirmation, submit_registrati
 SETTINGS = load_settings(
     {
         "DATABASE_URL": "postgresql://localhost/birmingham_registration_test",
-        "RESEND_API_KEY": "re_test",
-        "RESEND_FROM": "interest@example.com",
+        "MAILGUN_SMTP_HOST": "smtp.eu.mailgun.org",
+        "MAILGUN_SMTP_USERNAME": "confirmation@mg.example.com",
+        "MAILGUN_SMTP_PASSWORD": "secret",
+        "MAILGUN_FROM": "Interest <confirmation@mg.example.com>",
         "ADMIN_PASSWORD": "a-long-password",
         "SECRET_KEY": "a-long-secret",
         "PUBLIC_BASE_URL": "http://127.0.0.1:5051",
@@ -40,7 +42,7 @@ class FakeMailer:
 
     def send_confirmation(self, to_email, artwork_title, confirm_url):
         if self.fail:
-            raise RuntimeError("resend down")
+            raise RuntimeError("mail down")
         self.sent.append((to_email, artwork_title, confirm_url))
 
 
