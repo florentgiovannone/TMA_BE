@@ -28,7 +28,7 @@ a { color: var(--navy); }
 
 .band-inner,
 .wrap {
-  width: min(1180px, calc(100% - 32px));
+  width: calc(100% - 48px);
   margin: 0 auto;
 }
 
@@ -203,25 +203,31 @@ button.sign-in {
 
 .table-scroll {
   width: 100%;
-  max-width: 100%;
-  overflow-x: auto;
+  overflow: visible;
   background: var(--paper);
   border-top: 3px solid var(--gold);
 }
 
 .people {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .people th,
 .people td {
-  padding: 12px 14px;
+  padding: 10px 8px;
   text-align: left;
   vertical-align: top;
   border-bottom: 1px solid var(--line);
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.people th:last-child,
+.people td:last-child {
+  width: 72px;
 }
 
 .people th {
