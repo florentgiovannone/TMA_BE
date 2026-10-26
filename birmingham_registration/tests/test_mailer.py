@@ -37,6 +37,7 @@ def test_confirmation_email_uses_the_birmingham_layout():
     assert 'bgcolor="#fbf9f6"' in page
     assert "#b08958" in page
     assert "color-scheme" in page
+    assert "mix-blend-mode" not in page
     assert "Ada" not in page
 
 

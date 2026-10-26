@@ -30,13 +30,9 @@ def confirmation_html(artwork_title: str, confirm_url: str) -> str:
     <meta name="supported-color-schemes" content="light" />
     <style>
       :root {{ color-scheme: light only; supported-color-schemes: light; }}
-      u + .body .gmail-blend-screen {{ background:#000; mix-blend-mode:screen; }}
-      u + .body .gmail-blend-difference {{ background:#000; mix-blend-mode:difference; }}
     </style>
   </head>
-  <body class="body" bgcolor="#f4f0e8" style="margin:0;padding:0;background:#f4f0e8;background-color:#f4f0e8;">
-    <div class="gmail-blend-screen">
-      <div class="gmail-blend-difference">
+  <body bgcolor="#f4f0e8" style="margin:0;padding:0;background:#f4f0e8;background-color:#f4f0e8;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f4f0e8" style="background:#f4f0e8;background-color:#f4f0e8;">
           <tr>
             <td align="center" bgcolor="#f4f0e8" style="padding:32px 16px;background:#f4f0e8;background-color:#f4f0e8;">
@@ -75,8 +71,6 @@ def confirmation_html(artwork_title: str, confirm_url: str) -> str:
             </td>
           </tr>
         </table>
-      </div>
-    </div>
   </body>
 </html>
 """
