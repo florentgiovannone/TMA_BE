@@ -24,10 +24,7 @@ def submit_registration(store, mailer, limiter, settings, payload, ip: str) -> t
         return 400, {"ok": False, "errors": checked["errors"]}
     values = checked["values"]
     existing = store.find_pair(values["email"], values["artwork_slug"])
-    if existing and (
-        existing["status"] == "confirmed"
-        or existing["artwork_slug"] != values["artwork_slug"]
-    ):
+    if existing and existing["status"] == "confirmed":
         return 409, {
             "ok": False,
             "error": "already_registered",
