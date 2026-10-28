@@ -3,7 +3,7 @@ import logging
 import psycopg2.errors
 
 from birmingham_registration.config import load_settings
-from birmingham_registration.service import open_confirmation, submit_registration
+from birmingham_registration.service import open_confirmation, submit_contact, submit_registration
 
 SETTINGS = load_settings(
     {
@@ -18,6 +18,13 @@ SETTINGS = load_settings(
         "PRIVACY_CONTACT_EMAIL": "privacy@example.com",
     }
 )
+
+CONTACT_PAYLOAD = {
+    "name": "Ada Lovelace",
+    "email": "Ada@Example.com",
+    "organisation": "Analytical Engines",
+    "message": "We host a sculpture trail.",
+}
 
 PAYLOAD = {
     "name": "Ada",
@@ -36,18 +43,34 @@ PAYLOAD = {
 
 
 class FakeMailer:
-    def __init__(self, fail=False):
+    def __init__(self, fail=False, fail_thank_you=False):
         self.fail = fail
+        self.fail_thank_you = fail_thank_you
         self.sent = []
+        self.contact_service_sent = []
+        self.contact_thank_you_sent = []
 
     def send_confirmation(self, to_email, artwork_title, confirm_url):
         if self.fail:
             raise RuntimeError("mail down")
         self.sent.append((to_email, artwork_title, confirm_url))
 
+    def send_contact_service_email(self, to_email, values):
+        if self.fail:
+            raise RuntimeError("mail down")
+        self.contact_service_sent.append((to_email, dict(values)))
+
+    def send_contact_thank_you(self, to_email, name):
+        if self.fail or self.fail_thank_you:
+            raise RuntimeError("mail down")
+        self.contact_thank_you_sent.append((to_email, name))
+
 
 class AllowLimiter:
     def allow_registration(self, email, ip):
+        return True
+
+    def allow_contact(self, email, ip):
         return True
 
 
@@ -212,6 +235,9 @@ class DenyLimiter:
     def allow_registration(self, email, ip):
         return False
 
+    def allow_contact(self, email, ip):
+        return False
+
 
 def test_over_the_limit_saves_nothing(store):
     store.set_stock("the-star-of-bethlehem", 1)
@@ -230,3 +256,67 @@ def test_blank_fields_save_nothing(store):
     assert status == 400
     assert body["errors"]["name"] == "Enter your name."
     assert store.list_confirmed() == []
+
+
+def test_submit_contact_sends_service_and_thank_you_emails_without_logging_pii(caplog):
+    mailer = FakeMailer()
+    caplog.set_level(logging.INFO)
+    status, body = submit_contact(mailer, AllowLimiter(), SETTINGS, CONTACT_PAYLOAD, "10.0.0.1")
+    assert status == 201
+    assert body == {"ok": True}
+    assert mailer.contact_service_sent == [
+        (
+            "info@takemearound.com",
+            {
+                "name": "Ada Lovelace",
+                "email": "ada@example.com",
+                "organisation": "Analytical Engines",
+                "message": "We host a sculpture trail.",
+            },
+        )
+    ]
+    assert mailer.contact_thank_you_sent == [("ada@example.com", "Ada Lovelace")]
+    assert "ada@example.com" not in caplog.text
+    assert "Ada Lovelace" not in caplog.text
+    assert "sculpture trail" not in caplog.text
+
+
+def test_submit_contact_returns_400_on_invalid_fields_and_sends_no_mail():
+    mailer = FakeMailer()
+    status, body = submit_contact(mailer, AllowLimiter(), SETTINGS, {"name": ""}, "10.0.0.1")
+    assert status == 400
+    assert body["ok"] is False
+    assert body["errors"]["name"] == "Enter your name."
+    assert body["errors"]["email"] == "Enter a valid email."
+    assert body["errors"]["message"] == "Enter a message."
+    assert mailer.contact_service_sent == []
+    assert mailer.contact_thank_you_sent == []
+
+
+def test_submit_contact_returns_429_when_rate_limited():
+    mailer = FakeMailer()
+    status, body = submit_contact(mailer, DenyLimiter(), SETTINGS, CONTACT_PAYLOAD, "10.0.0.1")
+    assert status == 429
+    assert body == {
+        "ok": False,
+        "error": "too_many_requests",
+        "message": "Please try again later.",
+    }
+    assert mailer.contact_service_sent == []
+
+
+def test_submit_contact_returns_502_when_service_or_thank_you_email_fails():
+    status, body = submit_contact(
+        FakeMailer(fail=True), AllowLimiter(), SETTINGS, CONTACT_PAYLOAD, "10.0.0.1"
+    )
+    assert status == 502
+    assert body == {
+        "ok": False,
+        "error": "email_failed",
+        "message": "We could not send your message. Please try again later.",
+    }
+    status_second, body_second = submit_contact(
+        FakeMailer(fail_thank_you=True), AllowLimiter(), SETTINGS, CONTACT_PAYLOAD, "10.0.0.1"
+    )
+    assert status_second == 502
+    assert body_second["error"] == "email_failed"

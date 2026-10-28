@@ -60,6 +60,24 @@ def test_post_then_confirm_shows_the_thank_you_page_once(store):
     assert store.get_artwork("the-star-of-bethlehem")["stock"] == 0
 
 
+def test_post_contact_sends_service_and_thank_you_emails(store):
+    mailer = FakeMailer()
+    client = build(store, mailer).test_client()
+    response = client.post(
+        "/api/contact",
+        json={
+            "name": "Ada Lovelace",
+            "email": "Ada@Example.com",
+            "organisation": "Analytical Engines",
+            "message": "We host a sculpture trail.",
+        },
+    )
+    assert response.status_code == 201
+    assert response.get_json() == {"ok": True}
+    assert mailer.contact_service_sent[0][0] == "info@takemearound.com"
+    assert mailer.contact_thank_you_sent == [("ada@example.com", "Ada Lovelace")]
+
+
 def test_confirm_without_stock_says_the_artwork_is_unavailable(store):
     store.set_stock("the-star-of-bethlehem", 1)
     mailer = FakeMailer()

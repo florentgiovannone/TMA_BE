@@ -7,7 +7,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from birmingham_registration.admin import register_admin
 from birmingham_registration.redact import RedactTokenFilter
-from birmingham_registration.service import open_confirmation, submit_registration
+from birmingham_registration.service import open_confirmation, submit_contact, submit_registration
 
 CONFIRM_MESSAGES = {
     "confirmed": "Your interest is registered.",
@@ -37,7 +37,7 @@ def create_app(settings, store, mailer, limiter) -> Flask:
     CORS(
         application,
         resources={r"/api/*": {"origins": settings.cors_origins}},
-        allow_headers=["Content-Type"],
+        allow_headers=["Content-Type", "ngrok-skip-browser-warning"],
     )
     application.extensions["settings"] = settings
     application.extensions["store"] = store
@@ -69,6 +69,17 @@ def create_app(settings, store, mailer, limiter) -> Flask:
                 ],
             }
         )
+
+    @application.post("/api/contact")
+    def contact():
+        status, body = submit_contact(
+            mailer,
+            limiter,
+            settings,
+            request.get_json(silent=True),
+            request.remote_addr or "",
+        )
+        return jsonify(body), status
 
     @application.post("/api/registrations")
     def registrations():

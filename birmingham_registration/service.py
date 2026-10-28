@@ -3,7 +3,7 @@ import logging
 import psycopg2
 
 from birmingham_registration.tokens import hash_token, new_token
-from birmingham_registration.validation import validate_registration
+from birmingham_registration.validation import validate_contact, validate_registration
 
 LOGGER = logging.getLogger("birmingham_registration")
 
@@ -81,6 +81,34 @@ def submit_registration(store, mailer, limiter, settings, payload, ip: str) -> t
             "message": "We could not send the confirmation email. Nothing was saved.",
         }
     LOGGER.info("registration saved id=%s", registration_id)
+    return 201, {"ok": True}
+
+
+def submit_contact(mailer, limiter, settings, payload, ip: str) -> tuple[int, dict]:
+    email = ""
+    if isinstance(payload, dict) and isinstance(payload.get("email"), str):
+        email = payload["email"].strip().lower()
+    if not limiter.allow_contact(email, ip):
+        return 429, {
+            "ok": False,
+            "error": "too_many_requests",
+            "message": "Please try again later.",
+        }
+    checked = validate_contact(payload)
+    if not checked["ok"]:
+        return 400, {"ok": False, "errors": checked["errors"]}
+    values = checked["values"]
+    try:
+        mailer.send_contact_service_email(settings.contact_recipient_email, values)
+        mailer.send_contact_thank_you(values["email"], values["name"])
+    except Exception:
+        LOGGER.info("contact email failed")
+        return 502, {
+            "ok": False,
+            "error": "email_failed",
+            "message": "We could not send your message. Please try again later.",
+        }
+    LOGGER.info("contact message sent")
     return 201, {"ok": True}
 
 
