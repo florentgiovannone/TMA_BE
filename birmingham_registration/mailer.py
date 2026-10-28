@@ -94,7 +94,7 @@ def contact_thank_you_subject() -> str:
 def contact_thank_you_text(name: str) -> str:
     return (
         f"Hello {name},\n\n"
-        "Thank you for getting in touch with Take Me Around at the Museum Association Conference.\n\n"
+        "Thank you for getting in touch with Take Me Around.\n\n"
         "We have received your message and a member of our team will get back to you shortly.\n\n"
         "Best regards,\n"
         "Take Me Around"
@@ -105,7 +105,7 @@ def contact_thank_you_html(name: str) -> str:
     safe_name = html.escape(name)
     inner = (
         f'<p style="margin:0 0 16px;font-family:\'Avenir Next\',Avenir,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#243044;">Hello {safe_name},</p>'
-        '<p style="margin:0 0 16px;font-family:\'Avenir Next\',Avenir,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#243044;">Thank you for getting in touch with Take Me Around at the Museum Association Conference.</p>'
+        '<p style="margin:0 0 16px;font-family:\'Avenir Next\',Avenir,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#243044;">Thank you for getting in touch with Take Me Around.</p>'
         '<p style="margin:0 0 24px;font-family:\'Avenir Next\',Avenir,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#243044;">We have received your message and a member of our team will get back to you shortly.</p>'
         '<p style="margin:0;font-family:\'Avenir Next\',Avenir,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#243044;">Best regards,<br />Take Me Around</p>'
     )

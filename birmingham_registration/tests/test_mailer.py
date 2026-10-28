@@ -138,11 +138,14 @@ def test_contact_thank_you_email_greets_the_user_in_text_and_html():
     assert contact_thank_you_subject() == "Thank you for contacting Take Me Around"
     text = contact_thank_you_text("Ada <Lovelace>")
     assert "Ada <Lovelace>" in text
-    assert "Thank you for getting in touch with Take Me Around at the Museum Association Conference." in text
+    assert "Thank you for getting in touch with Take Me Around." in text
+    assert "at the Museum Association Conference" not in text
     page = contact_thank_you_html("Ada <Lovelace>")
     assert "Ada &lt;Lovelace&gt;" in page
     assert "<Lovelace>" not in page
     assert 'src="cid:brand-mark.png"' in page
+    assert "Thank you for getting in touch with Take Me Around." in page
+    assert "at the Museum Association Conference" not in page
     assert "Museum Association Conference" in page
     assert "Birmingham Conference" not in page
 
