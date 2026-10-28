@@ -1,4 +1,11 @@
-from birmingham_registration.validation import validate_registration
+from birmingham_registration.validation import validate_contact, validate_registration
+
+VALID_CONTACT = {
+    "name": "Ada Lovelace",
+    "email": "Ada@Example.com",
+    "organisation": "Analytical Engines",
+    "message": "We host a sculpture trail.",
+}
 
 VALID = {
     "name": "Ada",
@@ -70,3 +77,49 @@ def test_rejects_fields_over_their_limits():
     for field, limit in limits.items():
         result = validate_registration({**VALID, field: "a" * (limit + 1)})
         assert result["errors"] == {field: f"Use {limit} characters or fewer."}
+
+
+def test_validate_contact_accepts_valid_payload_and_optional_organisation():
+    result = validate_contact(VALID_CONTACT)
+    assert result == {
+        "ok": True,
+        "values": {
+            "name": "Ada Lovelace",
+            "email": "ada@example.com",
+            "organisation": "Analytical Engines",
+            "message": "We host a sculpture trail.",
+        },
+    }
+    without_org = validate_contact({**VALID_CONTACT, "organisation": "   "})
+    assert without_org["ok"] is True
+    assert without_org["values"]["organisation"] == ""
+
+
+def test_validate_contact_rejects_blank_required_fields_and_bad_email():
+    assert validate_contact({}) == {
+        "ok": False,
+        "errors": {
+            "name": "Enter your name.",
+            "email": "Enter a valid email.",
+            "message": "Enter a message.",
+        },
+    }
+    assert validate_contact({**VALID_CONTACT, "email": "not-an-email"}) == {
+        "ok": False,
+        "errors": {"email": "Enter a valid email."},
+    }
+
+
+def test_validate_contact_rejects_fields_over_their_limits():
+    limits = {
+        "name": 100,
+        "email": 254,
+        "organisation": 200,
+        "message": 2000,
+    }
+    for field, limit in limits.items():
+        result = validate_contact({**VALID_CONTACT, field: "a" * (limit + 1)})
+        assert result == {
+            "ok": False,
+            "errors": {field: f"Use {limit} characters or fewer."},
+        }

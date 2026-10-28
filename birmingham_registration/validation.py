@@ -24,6 +24,45 @@ BLANK = {
     "country": "Choose a country.",
 }
 ARTWORK_SLUGS = ("the-star-of-bethlehem", "the-golden-boys")
+CONTACT_LIMITS = {
+    "name": 100,
+    "email": 254,
+    "organisation": 200,
+    "message": 2000,
+}
+CONTACT_BLANK = {
+    "name": "Enter your name.",
+    "email": "Enter a valid email.",
+    "message": "Enter a message.",
+}
+
+
+def validate_contact(payload: object) -> dict:
+    data = payload if isinstance(payload, dict) else {}
+    errors: dict[str, str] = {}
+    values: dict[str, str] = {}
+    for field, limit in CONTACT_LIMITS.items():
+        raw = data.get(field, "")
+        text = raw.strip() if isinstance(raw, str) else ""
+        if len(text) > limit:
+            errors[field] = f"Use {limit} characters or fewer."
+            continue
+        if field == "email":
+            if not EMAIL.match(text):
+                errors[field] = CONTACT_BLANK[field]
+            else:
+                values[field] = text.lower()
+            continue
+        if field == "organisation":
+            values[field] = text
+            continue
+        if not text:
+            errors[field] = CONTACT_BLANK[field]
+        else:
+            values[field] = text
+    if errors:
+        return {"ok": False, "errors": errors}
+    return {"ok": True, "values": values}
 
 
 def validate_registration(payload: object) -> dict:

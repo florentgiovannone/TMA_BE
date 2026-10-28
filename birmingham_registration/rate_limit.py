@@ -8,6 +8,8 @@ class MemoryRateLimiter:
         self._clock = clock or time.monotonic
         self._emails: dict[str, deque[float]] = defaultdict(deque)
         self._ips: dict[str, deque[float]] = defaultdict(deque)
+        self._contact_emails: dict[str, deque[float]] = defaultdict(deque)
+        self._contact_ips: dict[str, deque[float]] = defaultdict(deque)
         self._login_failures: dict[str, int] = {}
         self._login_blocked_until: dict[str, float] = {}
 
@@ -15,6 +17,12 @@ class MemoryRateLimiter:
         now = self._clock()
         email_ok = self._hit(self._emails, email, now, 5)
         ip_ok = self._hit(self._ips, ip, now, 30)
+        return email_ok and ip_ok
+
+    def allow_contact(self, email: str, ip: str) -> bool:
+        now = self._clock()
+        email_ok = self._hit(self._contact_emails, email, now, 5)
+        ip_ok = self._hit(self._contact_ips, ip, now, 30)
         return email_ok and ip_ok
 
     def _hit(self, buckets: dict[str, deque[float]], key: str, now: float, limit: int) -> bool:

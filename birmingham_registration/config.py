@@ -33,6 +33,7 @@ class Settings:
     cors_origins: list[str]
     port: int
     trusted_proxy_hops: int
+    contact_recipient_email: str = "info@takemearound.com"
 
     @property
     def secure_cookies(self) -> bool:
@@ -73,4 +74,8 @@ def load_settings(environ: Mapping[str, str]) -> Settings:
         cors_origins=origins,
         port=int(environ.get("PORT", "5051").strip() or "5051"),
         trusted_proxy_hops=_non_negative_int_setting(environ, "TRUSTED_PROXY_HOPS", "0"),
+        contact_recipient_email=(
+            environ.get("CONTACT_RECIPIENT_EMAIL", "info@takemearound.com").strip()
+            or "info@takemearound.com"
+        ),
     )

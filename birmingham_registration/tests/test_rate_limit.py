@@ -38,3 +38,17 @@ def test_five_failed_logins_pause_that_ip_for_fifteen_minutes():
     assert limiter.allow_login("10.0.0.1") is True
     limiter.record_login_success("10.0.0.1")
     assert limiter.allow_login("10.0.0.1") is True
+
+
+def test_contact_limits_are_five_per_email_and_thirty_per_ip_independent_of_registration():
+    now = [0.0]
+    limiter = MemoryRateLimiter(clock=lambda: now[0])
+    for _ in range(5):
+        assert limiter.allow_contact("ada@example.com", "10.0.0.1") is True
+    assert limiter.allow_contact("ada@example.com", "10.0.0.2") is False
+    assert limiter.allow_registration("ada@example.com", "10.0.0.1") is True
+    for index in range(30):
+        assert limiter.allow_contact(f"person{index}@example.com", "10.0.0.9") is True
+    assert limiter.allow_contact("fresh@example.com", "10.0.0.9") is False
+    now[0] += 3601
+    assert limiter.allow_contact("ada@example.com", "10.0.0.1") is True

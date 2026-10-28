@@ -62,3 +62,10 @@ def test_load_settings_rejects_a_bad_mailgun_host_or_port():
         load_settings({**REQUIRED, "MAILGUN_SMTP_HOST": "smtp.example.com"})
     with pytest.raises(RuntimeError):
         load_settings({**REQUIRED, "MAILGUN_SMTP_PORT": "25"})
+
+
+def test_load_settings_defaults_and_overrides_contact_recipient_email():
+    settings = load_settings(REQUIRED)
+    assert settings.contact_recipient_email == "info@takemearound.com"
+    custom = load_settings({**REQUIRED, "CONTACT_RECIPIENT_EMAIL": " team@takemearound.com "})
+    assert custom.contact_recipient_email == "team@takemearound.com"
