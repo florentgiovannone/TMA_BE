@@ -163,6 +163,9 @@ def test_contact_service_email_includes_user_details_and_escapes_html():
     assert "Analytical &lt;Engines&gt;" in page
     assert "Line one<br />Line &lt;two&gt;" in page
     assert "<two>" not in page
+    empty_org = {**values, "organisation": ""}
+    assert "Organisation: —" in contact_service_text(empty_org)
+    assert "<strong>Organisation:</strong> —" in contact_service_html(empty_org)
 
 
 def test_mailgun_sends_contact_thank_you_and_service_emails_with_reply_to(monkeypatch):

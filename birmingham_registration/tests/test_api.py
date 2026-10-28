@@ -1,6 +1,6 @@
 from birmingham_registration.app import create_app
 from birmingham_registration.rate_limit import MemoryRateLimiter
-from birmingham_registration.tests.test_service import PAYLOAD, SETTINGS, FakeMailer
+from birmingham_registration.tests.test_service import PAYLOAD, SETTINGS, DenyLimiter, FakeMailer
 from birmingham_registration.tests.test_store import VALUES
 
 
@@ -76,6 +76,31 @@ def test_post_contact_sends_service_and_thank_you_emails(store):
     assert response.get_json() == {"ok": True}
     assert mailer.contact_service_sent[0][0] == "info@takemearound.com"
     assert mailer.contact_thank_you_sent == [("ada@example.com", "Ada Lovelace")]
+
+
+CONTACT_JSON = {
+    "name": "Ada Lovelace",
+    "email": "Ada@Example.com",
+    "organisation": "Analytical Engines",
+    "message": "We host a sculpture trail.",
+}
+
+
+def test_post_contact_returns_400_429_and_502_on_errors(store):
+    client = build(store).test_client()
+    bad = client.post("/api/contact", json={"name": ""})
+    assert bad.status_code == 400
+    assert bad.get_json()["errors"]["name"] == "Enter your name."
+
+    limited = build(store, limiter=DenyLimiter()).test_client()
+    too_many = limited.post("/api/contact", json=CONTACT_JSON)
+    assert too_many.status_code == 429
+    assert too_many.get_json()["error"] == "too_many_requests"
+
+    failing = build(store, mailer=FakeMailer(fail=True)).test_client()
+    mail_error = failing.post("/api/contact", json=CONTACT_JSON)
+    assert mail_error.status_code == 502
+    assert mail_error.get_json()["error"] == "email_failed"
 
 
 def test_confirm_without_stock_says_the_artwork_is_unavailable(store):
