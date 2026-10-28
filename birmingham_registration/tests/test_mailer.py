@@ -6,6 +6,12 @@ from birmingham_registration.mailer import (
     confirmation_html,
     confirmation_subject,
     confirmation_text,
+    contact_service_html,
+    contact_service_subject,
+    contact_service_text,
+    contact_thank_you_html,
+    contact_thank_you_subject,
+    contact_thank_you_text,
     mailgun_smtp_host,
     mailgun_smtp_port,
 )
@@ -124,6 +130,87 @@ def test_mailgun_raises_when_smtp_rejects_the_login(monkeypatch):
             "secret",
             "Interest <confirmation@mg.example.com>",
         ).send_confirmation("ada@example.com", "The Golden Boys", "https://interest.example.com/confirm?token=abc")
+
+
+def test_contact_thank_you_email_greets_the_user_in_text_and_html():
+    assert contact_thank_you_subject() == "Thank you for contacting Take Me Around"
+    text = contact_thank_you_text("Ada <Lovelace>")
+    assert "Ada <Lovelace>" in text
+    assert "Thank you for getting in touch with Take Me Around" in text
+    page = contact_thank_you_html("Ada <Lovelace>")
+    assert "Ada &lt;Lovelace&gt;" in page
+    assert "<Lovelace>" not in page
+    assert 'src="cid:brand-mark.png"' in page
+    assert "Birmingham Conference" in page
+
+
+def test_contact_service_email_includes_user_details_and_escapes_html():
+    values = {
+        "name": "Ada Lovelace",
+        "email": "ada@example.com",
+        "organisation": "Analytical <Engines>",
+        "message": "Line one\nLine <two>",
+    }
+    assert contact_service_subject("Ada\r\nLovelace") == "Birmingham Conference enquiry from Ada Lovelace"
+    text = contact_service_text(values)
+    assert "Name: Ada Lovelace" in text
+    assert "Email: ada@example.com" in text
+    assert "Organisation: Analytical <Engines>" in text
+    assert "Line one\nLine <two>" in text
+    page = contact_service_html(values)
+    assert "Ada Lovelace" in page
+    assert "ada@example.com" in page
+    assert "Analytical &lt;Engines&gt;" in page
+    assert "Line one<br />Line &lt;two&gt;" in page
+    assert "<two>" not in page
+
+
+def test_mailgun_sends_contact_thank_you_and_service_emails_with_reply_to(monkeypatch):
+    sent_messages = []
+
+    class FakeSMTP:
+        def __init__(self, host, port, timeout):
+            pass
+
+        def ehlo(self):
+            return (250, b"ok")
+
+        def starttls(self):
+            return (220, b"ready")
+
+        def login(self, username, password):
+            pass
+
+        def send_message(self, message):
+            sent_messages.append(message)
+
+        def quit(self):
+            pass
+
+    monkeypatch.setattr("birmingham_registration.mailer.smtplib.SMTP", FakeSMTP)
+    mailer = MailgunMailer(
+        "smtp.eu.mailgun.org",
+        587,
+        "confirmation@mg.example.com",
+        "secret",
+        "Take Me Around <confirmation@mg.example.com>",
+    )
+    values = {
+        "name": "Ada Lovelace",
+        "email": "ada@example.com",
+        "organisation": "",
+        "message": "We host a sculpture trail.",
+    }
+    mailer.send_contact_service_email("info@takemearound.com", values)
+    mailer.send_contact_thank_you("ada@example.com", "Ada Lovelace")
+
+    assert len(sent_messages) == 2
+    service_msg, thank_you_msg = sent_messages
+    assert service_msg["To"] == "info@takemearound.com"
+    assert service_msg["Reply-To"] == "ada@example.com"
+    assert service_msg["Subject"] == "Birmingham Conference enquiry from Ada Lovelace"
+    assert thank_you_msg["To"] == "ada@example.com"
+    assert thank_you_msg["Subject"] == "Thank you for contacting Take Me Around"
 
 
 def test_mailgun_smtp_host_and_port_are_limited():
