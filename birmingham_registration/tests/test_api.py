@@ -53,6 +53,9 @@ def test_post_then_confirm_shows_the_thank_you_page_once(store):
     page = client.get(f"/confirm?token={token}")
     assert page.status_code == 200
     assert b"Your interest is registered." in page.data
+    assert b"Museum Association Conference" in page.data
+    assert b"https://takemearound.com/" in page.data
+    assert b"Discover more at takemearound.com" in page.data
     assert page.headers["Referrer-Policy"] == "no-referrer"
     assert token.encode() not in page.data
     again = client.get(f"/confirm?token={token}")

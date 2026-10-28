@@ -83,6 +83,8 @@ def test_admin_lists_and_exports_only_confirmed_people(store):
         "923928026d5d143618c25a098db0c86677cc1994439d66ff8ed71904e10d8339",
     )
     page = log_in(client)
+    assert b"Museum Association Conference" in page.data
+    assert b"Birmingham Conference" not in page.data
     assert b"Ada" in page.data
     assert b"Hidden" not in page.data
     assert b"The Star of Bethlehem" in page.data

@@ -56,7 +56,7 @@ def _card_shell(heading: str, inner_html: str) -> str:
                 </tr>
                 <tr>
                   <td bgcolor="#fbf9f6" style="padding:28px 32px 32px;background:#fbf9f6;background-color:#fbf9f6;border-top:3px solid #b08958;">
-                    <p style="margin:0 0 12px;font-family:'Avenir Next',Avenir,Helvetica,sans-serif;font-size:13px;letter-spacing:0.08em;color:#b08958;">Birmingham Conference</p>
+                    <p style="margin:0 0 12px;font-family:'Avenir Next',Avenir,Helvetica,sans-serif;font-size:13px;letter-spacing:0.08em;color:#b08958;">Museum Association Conference</p>
                     <h1 style="margin:0 0 16px;font-family:Georgia,serif;font-size:28px;line-height:1.2;font-weight:normal;color:#0e2347;">{safe_heading}</h1>
                     {inner_html}
                   </td>
@@ -82,7 +82,6 @@ def confirmation_html(artwork_title: str, confirm_url: str) -> str:
         "</td>"
         "</tr>"
         "</table>"
-        f'<p style="margin:20px 0 0;font-family:\'Avenir Next\',Avenir,Helvetica,sans-serif;font-size:13px;line-height:1.5;color:#0e2347;word-break:break-all;"><a href="{url}" style="color:#0e2347;text-decoration:underline;">{url}</a></p>'
         '<p style="margin:24px 0 0;font-family:\'Avenir Next\',Avenir,Helvetica,sans-serif;font-size:13px;line-height:1.5;color:#243044;">If you did not ask for this email, you can ignore it.</p>'
     )
     return _card_shell("Confirm your interest", inner)
@@ -95,7 +94,7 @@ def contact_thank_you_subject() -> str:
 def contact_thank_you_text(name: str) -> str:
     return (
         f"Hello {name},\n\n"
-        "Thank you for getting in touch with Take Me Around at the Birmingham Conference.\n\n"
+        "Thank you for getting in touch with Take Me Around at the Museum Association Conference.\n\n"
         "We have received your message and a member of our team will get back to you shortly.\n\n"
         "Best regards,\n"
         "Take Me Around"
@@ -106,7 +105,7 @@ def contact_thank_you_html(name: str) -> str:
     safe_name = html.escape(name)
     inner = (
         f'<p style="margin:0 0 16px;font-family:\'Avenir Next\',Avenir,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#243044;">Hello {safe_name},</p>'
-        '<p style="margin:0 0 16px;font-family:\'Avenir Next\',Avenir,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#243044;">Thank you for getting in touch with Take Me Around at the Birmingham Conference.</p>'
+        '<p style="margin:0 0 16px;font-family:\'Avenir Next\',Avenir,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#243044;">Thank you for getting in touch with Take Me Around at the Museum Association Conference.</p>'
         '<p style="margin:0 0 24px;font-family:\'Avenir Next\',Avenir,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#243044;">We have received your message and a member of our team will get back to you shortly.</p>'
         '<p style="margin:0;font-family:\'Avenir Next\',Avenir,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#243044;">Best regards,<br />Take Me Around</p>'
     )
@@ -114,13 +113,13 @@ def contact_thank_you_html(name: str) -> str:
 
 
 def contact_service_subject(name: str) -> str:
-    return f"Birmingham Conference enquiry from {_single_line(name)}"
+    return f"Museum Association Conference enquiry from {_single_line(name)}"
 
 
 def contact_service_text(values: dict) -> str:
     organisation = values.get("organisation") or "—"
     return (
-        "New contact message from the Birmingham Conference dashboard.\n\n"
+        "New contact message from the Museum Association Conference dashboard.\n\n"
         f"Name: {values['name']}\n"
         f"Email: {values['email']}\n"
         f"Organisation: {organisation}\n\n"

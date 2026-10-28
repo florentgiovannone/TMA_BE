@@ -35,9 +35,11 @@ def test_confirmation_email_uses_the_birmingham_layout():
     assert "ME" in page
     assert "AROUND" in page
     assert 'src="cid:brand-mark.png"' in page
-    assert "Birmingham Conference" in page
+    assert "Museum Association Conference" in page
+    assert "Birmingham Conference" not in page
     assert "Confirm my interest" in page
     assert 'href="https://interest.example.com/confirm?token=abc"' in page
+    assert f">{url}</a>" not in page
     assert 'bgcolor="#0e2347"' in page
     assert 'bgcolor="#f4f0e8"' in page
     assert 'bgcolor="#fbf9f6"' in page
@@ -136,12 +138,13 @@ def test_contact_thank_you_email_greets_the_user_in_text_and_html():
     assert contact_thank_you_subject() == "Thank you for contacting Take Me Around"
     text = contact_thank_you_text("Ada <Lovelace>")
     assert "Ada <Lovelace>" in text
-    assert "Thank you for getting in touch with Take Me Around" in text
+    assert "Thank you for getting in touch with Take Me Around at the Museum Association Conference." in text
     page = contact_thank_you_html("Ada <Lovelace>")
     assert "Ada &lt;Lovelace&gt;" in page
     assert "<Lovelace>" not in page
     assert 'src="cid:brand-mark.png"' in page
-    assert "Birmingham Conference" in page
+    assert "Museum Association Conference" in page
+    assert "Birmingham Conference" not in page
 
 
 def test_contact_service_email_includes_user_details_and_escapes_html():
@@ -151,13 +154,15 @@ def test_contact_service_email_includes_user_details_and_escapes_html():
         "organisation": "Analytical <Engines>",
         "message": "Line one\nLine <two>",
     }
-    assert contact_service_subject("Ada\r\nLovelace") == "Birmingham Conference enquiry from Ada Lovelace"
+    assert contact_service_subject("Ada\r\nLovelace") == "Museum Association Conference enquiry from Ada Lovelace"
     text = contact_service_text(values)
+    assert "Museum Association Conference" in text
     assert "Name: Ada Lovelace" in text
     assert "Email: ada@example.com" in text
     assert "Organisation: Analytical <Engines>" in text
     assert "Line one\nLine <two>" in text
     page = contact_service_html(values)
+    assert "Museum Association Conference" in page
     assert "Ada Lovelace" in page
     assert "ada@example.com" in page
     assert "Analytical &lt;Engines&gt;" in page
@@ -211,7 +216,7 @@ def test_mailgun_sends_contact_thank_you_and_service_emails_with_reply_to(monkey
     service_msg, thank_you_msg = sent_messages
     assert service_msg["To"] == "info@takemearound.com"
     assert service_msg["Reply-To"] == "ada@example.com"
-    assert service_msg["Subject"] == "Birmingham Conference enquiry from Ada Lovelace"
+    assert service_msg["Subject"] == "Museum Association Conference enquiry from Ada Lovelace"
     assert thank_you_msg["To"] == "ada@example.com"
     assert thank_you_msg["Subject"] == "Thank you for contacting Take Me Around"
 
