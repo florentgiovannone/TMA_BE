@@ -291,11 +291,10 @@ class Store:
                     raise _StockUnavailable()
                 return True
 
-    def list_confirmed(self) -> list[Row]:
+    def list_confirmed(self, pack_number: str | None = None) -> list[Row]:
         with self._session() as conn:
             with _cursor(conn) as cur:
-                cur.execute(
-                    """
+                sql = """
                     SELECT r.id, r.name, r.surname, r.email, r.phone_dial_code,
                            r.phone_number, r.phone_extension, r.company, r.position,
                            r.town, r.country, r.artwork_slug, a.title AS artwork_title,
@@ -303,9 +302,13 @@ class Store:
                     FROM registrations r
                     JOIN artworks a ON a.slug = r.artwork_slug
                     WHERE r.status = 'confirmed'
-                    ORDER BY r.confirmed_at DESC
                     """
-                )
+                params: tuple[str, ...] = ()
+                if pack_number is not None:
+                    sql += " AND r.pack_number = %s"
+                    params = (pack_number,)
+                sql += " ORDER BY r.confirmed_at DESC"
+                cur.execute(sql, params)
                 return _rows(cur.fetchall())
 
     def confirm(self, token_hash: str) -> str:

@@ -163,10 +163,11 @@ def public_registration(row: dict) -> dict:
 
 
 def list_public_registrations(store, pack_number: str | None) -> dict:
-    store.purge_expired()
-    rows = store.list_confirmed()
-    if pack_number is not None:
-        rows = [row for row in rows if (row.get("pack_number") or "") == pack_number]
+    if pack_number is None:
+        store.purge_expired()
+        rows = store.list_confirmed()
+    else:
+        rows = store.list_confirmed(pack_number)
     return {"registrations": [public_registration(row) for row in rows]}
 
 
