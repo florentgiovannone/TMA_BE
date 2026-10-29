@@ -19,6 +19,11 @@ def _csv_safe_cell(value) -> str:
     return text
 
 
+def _pack_label(row: dict) -> str:
+    number = row.get("pack_number") or ""
+    return f"MACD{number}" if number else ""
+
+
 def _phone_label(row: dict) -> str:
     number = row.get("phone_number") or ""
     if not number:
@@ -122,6 +127,7 @@ def register_admin(application) -> None:
                 "town",
                 "country",
                 "artwork",
+                "pack_number",
                 "confirmed_at",
             ]
         )
@@ -137,6 +143,7 @@ def register_admin(application) -> None:
                     _csv_safe_cell(row["town"]),
                     _csv_safe_cell(row["country"]),
                     _csv_safe_cell(row["artwork_title"]),
+                    _csv_safe_cell(_pack_label(row)),
                     _csv_safe_cell(row["confirmed_at"].isoformat()),
                 ]
             )

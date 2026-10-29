@@ -90,13 +90,21 @@ def test_admin_lists_and_exports_only_confirmed_people(store):
     assert b"Ada" in page.data
     assert b"Hidden" not in page.data
     assert b"The Star of Betlehem" in page.data
+    assert b"MACD101" in page.data
+    assert b"MACD001" in page.data
+    assert b">101<" not in page.data
     csv_response = client.get("/admin/registrations.csv")
     text = csv_response.get_data(as_text=True)
     assert "ada@example.com" in text
     assert "hidden@example.com" not in text
     assert csv_response.mimetype == "text/csv"
     rows = list(csv.reader(io.StringIO(text)))
+    assert rows[0][-2] == "pack_number"
+    assert rows[0][-1] == "confirmed_at"
+    ada_rows = [row for row in rows[1:] if row[2] == "ada@example.com"]
+    assert ada_rows[0][-2] == "MACD101"
     formula_rows = [row for row in rows[1:] if row[2] == "formula@example.com"]
+    assert formula_rows[0][-2] == "MACD001"
     assert len(formula_rows) == 1
     assert formula_rows[0][0].startswith("'")
     assert formula_rows[0][0] == f"'{FORMULA_NAME}"

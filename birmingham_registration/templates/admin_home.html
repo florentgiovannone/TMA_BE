@@ -59,6 +59,7 @@
               <th scope="col">Town</th>
               <th scope="col">Country</th>
               <th scope="col">Artwork</th>
+              <th scope="col">Pack number</th>
               <th scope="col">Confirmed</th>
               <th scope="col"><span class="sr">Remove</span></th>
             </tr>
@@ -79,6 +80,7 @@
               <td>{{ row.town }}</td>
               <td>{{ row.country }}</td>
               <td>{{ row.artwork_title }}</td>
+              <td>{% if row.pack_number %}MACD{{ row.pack_number }}{% endif %}</td>
               <td>{{ row.confirmed_at.strftime("%d %b %Y, %H:%M") }}</td>
               <td>
                 <form method="post" action="/admin/registrations/{{ row.id }}/delete">
@@ -89,7 +91,7 @@
             </tr>
             {% else %}
             <tr>
-              <td colspan="11">No confirmed registrations.</td>
+              <td colspan="12">No confirmed registrations.</td>
             </tr>
             {% endfor %}
           </tbody>
