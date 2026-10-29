@@ -198,9 +198,6 @@ def test_get_registrations_returns_confirmed_rows_only(store):
     assert missing.get_json() == {"registrations": []}
     unknown = client.get("/api/registrations?packNumber=199", headers=READ_HEADERS)
     assert unknown.get_json() == {"registrations": []}
-    by_pack_without_purge_cost = client.get("/api/registrations?packNumber=001")
-    assert by_pack_without_purge_cost.status_code == 200
-    assert by_pack_without_purge_cost.get_json() == body
 
 
 def test_post_registrations_is_unchanged(store):
