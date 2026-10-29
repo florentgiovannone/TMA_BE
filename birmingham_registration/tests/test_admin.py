@@ -17,6 +17,31 @@ def log_in(client, password="a-long-password"):
     )
 
 
+def test_logout_clears_the_session_and_shows_a_fresh_login_form(store):
+    client = build(store).test_client()
+    log_in(client)
+    home = client.get("/admin")
+    assert home.status_code == 200
+    html = home.get_data(as_text=True)
+    assert ">Logout<" in html
+    assert "Sign out" not in html
+    first_csrf = html.split('name="csrf_token" value="', 1)[1].split('"', 1)[0]
+
+    response = client.post("/admin/logout")
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/admin/login")
+    assert client.get("/admin").status_code == 302
+
+    login = client.get("/admin/login")
+    assert login.status_code == 200
+    login_html = login.get_data(as_text=True)
+    assert 'name="password"' in login_html
+    assert 'name="csrf_token"' in login_html
+    second_csrf = login_html.split('name="csrf_token" value="', 1)[1].split('"', 1)[0]
+    assert second_csrf
+    assert second_csrf != first_csrf
+
+
 def test_wrong_unicode_password_returns_incorrect_not_server_error(store):
     client = build(store).test_client()
     page = client.get("/admin/login")
