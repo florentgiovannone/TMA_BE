@@ -46,5 +46,8 @@ def test_redact_token_in_args_tuple():
         exc_info=None,
     )
     RedactTokenFilter().filter(record)
+    assert isinstance(record.args, tuple)
+    assert len(record.args) == 1
+    assert isinstance(record.args[0], str)
     assert "abc123" not in record.args[0]
     assert "token=redacted" in record.args[0]

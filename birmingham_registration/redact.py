@@ -11,8 +11,6 @@ class RedactTokenFilter(logging.Filter):
             record.args = tuple(self._redact(arg) for arg in record.args)
         elif isinstance(record.args, dict):
             record.args = {key: self._redact(value) for key, value in record.args.items()}
-        else:
-            record.args = self._redact(record.args)
         return True
 
     def _redact(self, value):

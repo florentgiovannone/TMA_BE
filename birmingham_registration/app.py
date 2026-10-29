@@ -63,7 +63,10 @@ def create_app(settings, store, mailer, limiter) -> Flask:
 
     @application.get("/favicon.ico")
     def favicon():
-        return send_from_directory(application.static_folder, "favicon.png", mimetype="image/png")
+        static_folder = application.static_folder
+        if static_folder is None:
+            raise RuntimeError("static folder is not configured")
+        return send_from_directory(static_folder, "favicon.png", mimetype="image/png")
 
     @application.get("/api/health")
     def health():

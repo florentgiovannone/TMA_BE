@@ -162,7 +162,7 @@
         if (first) first.focus()
       })
       cancel.addEventListener("click", closeEdit)
-      save.addEventListener("click", function () {
+      function requestStockConfirmation() {
         var invalid = stockCards().find(function (card) {
           return !card.querySelector("[data-stock-input]").checkValidity()
         })
@@ -181,7 +181,8 @@
           summary.append(item)
         })
         modal.showModal()
-      })
+      }
+      save.addEventListener("click", requestStockConfirmation)
       dismissStock.addEventListener("click", function () {
         modal.close()
       })
@@ -221,6 +222,11 @@
 
       document.addEventListener("submit", function (event) {
         var form = event.target
+        if (form.classList.contains("stock-form")) {
+          event.preventDefault()
+          requestStockConfirmation()
+          return
+        }
         if (!form.action || !form.action.endsWith("/delete")) return
         event.preventDefault()
         var cells = form.closest("tr").querySelectorAll("td")

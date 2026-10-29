@@ -1,0 +1,15 @@
+{
+  "include": ["birmingham_registration"],
+  "exclude": [
+    ".venv",
+    ".venv-birmingham",
+    ".venv-frieze",
+    "**/__pycache__",
+    "**/node_modules"
+  ],
+  "extraPaths": ["."],
+  "venvPath": ".",
+  "venv": ".venv-birmingham",
+  "pythonVersion": "3.12",
+  "pythonPlatform": "Darwin"
+}

@@ -158,6 +158,18 @@ def test_delete_removes_the_person_and_returns_their_stock(store):
     assert store.get_artwork("the-golden-boys")["stock"] == 0
 
 
+def test_admin_stock_form_submit_is_intercepted_for_confirmation(store):
+    client = build(store).test_client()
+    log_in(client)
+    html = client.get("/admin").get_data(as_text=True)
+    assert 'class="stock-form"' in html
+    assert "Confirm stock" in html
+    assert 'form.classList.contains("stock-form")' in html
+    stock_guard = html.split('form.classList.contains("stock-form")', 1)[1]
+    assert "event.preventDefault()" in stock_guard.split("}", 1)[0]
+    assert "requestStockConfirmation" in html
+
+
 def test_stock_rejects_a_negative_number_and_accepts_zero(store):
     client = build(store).test_client()
     log_in(client)

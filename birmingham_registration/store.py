@@ -1,11 +1,28 @@
 import uuid
+from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Any, cast
 
 import psycopg2
-from psycopg2.extras import RealDictCursor
+from psycopg2.extras import RealDictCursor, RealDictRow
 
 SCHEMA = Path(__file__).with_name("schema.sql").read_text()
+Row = dict[str, Any]
+
+
+@contextmanager
+def _cursor(conn) -> Iterator[RealDictCursor]:
+    with conn.cursor() as cur:
+        yield cast(RealDictCursor, cur)
+
+
+def _row(value: RealDictRow | None) -> Row | None:
+    return None if value is None else dict(value)
+
+
+def _rows(values: list[RealDictRow]) -> list[Row]:
+    return [dict(row) for row in values]
 
 
 class _StockUnavailable(Exception):
@@ -76,20 +93,20 @@ class Store:
                 cur.execute("DELETE FROM registrations")
                 cur.execute("UPDATE artworks SET stock = 0")
 
-    def list_artworks(self) -> list[dict]:
+    def list_artworks(self) -> list[Row]:
         with self._session() as conn:
-            with conn.cursor() as cur:
+            with _cursor(conn) as cur:
                 cur.execute("SELECT slug, title, stock FROM artworks ORDER BY title DESC")
-                return list(cur.fetchall())
+                return _rows(cur.fetchall())
 
-    def get_artwork(self, slug: str) -> dict | None:
+    def get_artwork(self, slug: str) -> Row | None:
         with self._session() as conn:
-            with conn.cursor() as cur:
+            with _cursor(conn) as cur:
                 cur.execute(
                     "SELECT slug, title, stock FROM artworks WHERE slug = %s",
                     (slug,),
                 )
-                return cur.fetchone()
+                return _row(cur.fetchone())
 
     def set_stock(self, slug: str, stock: int) -> bool:
         if (
@@ -129,15 +146,15 @@ class Store:
                     (registration_id,),
                 )
 
-    def get_registration(self, registration_id: str) -> dict | None:
+    def get_registration(self, registration_id: str) -> Row | None:
         with self._session() as conn:
-            with conn.cursor() as cur:
+            with _cursor(conn) as cur:
                 cur.execute("SELECT * FROM registrations WHERE id = %s", (registration_id,))
-                return cur.fetchone()
+                return _row(cur.fetchone())
 
-    def find_pair(self, email: str, _artwork_slug: str) -> dict | None:
+    def find_pair(self, email: str, _artwork_slug: str) -> Row | None:
         with self._session() as conn:
-            with conn.cursor() as cur:
+            with _cursor(conn) as cur:
                 cur.execute(
                     """
                     SELECT id, status, token_hash, artwork_slug
@@ -148,11 +165,11 @@ class Store:
                     """,
                     (email,),
                 )
-                return cur.fetchone()
+                return _row(cur.fetchone())
 
-    def find_pack(self, pack_number: str) -> dict | None:
+    def find_pack(self, pack_number: str) -> Row | None:
         with self._session() as conn:
-            with conn.cursor() as cur:
+            with _cursor(conn) as cur:
                 cur.execute(
                     """
                     SELECT id, status
@@ -162,7 +179,7 @@ class Store:
                     """,
                     (pack_number,),
                 )
-                return cur.fetchone()
+                return _row(cur.fetchone())
 
     def insert_unconfirmed(self, values: dict, token_hash: str) -> str:
         registration_id = str(uuid.uuid4())
@@ -250,7 +267,7 @@ class Store:
 
     def delete_confirmed(self, registration_id: str) -> bool:
         with self._session() as conn:
-            with conn.cursor() as cur:
+            with _cursor(conn) as cur:
                 cur.execute(
                     """
                     DELETE FROM registrations
@@ -259,7 +276,7 @@ class Store:
                     """,
                     (registration_id,),
                 )
-                row = cur.fetchone()
+                row = _row(cur.fetchone())
                 if row is None:
                     return False
                 cur.execute(
@@ -274,9 +291,9 @@ class Store:
                     raise _StockUnavailable()
                 return True
 
-    def list_confirmed(self) -> list[dict]:
+    def list_confirmed(self) -> list[Row]:
         with self._session() as conn:
-            with conn.cursor() as cur:
+            with _cursor(conn) as cur:
                 cur.execute(
                     """
                     SELECT r.id, r.name, r.surname, r.email, r.phone_dial_code,
@@ -289,13 +306,13 @@ class Store:
                     ORDER BY r.confirmed_at DESC
                     """
                 )
-                return list(cur.fetchall())
+                return _rows(cur.fetchall())
 
     def confirm(self, token_hash: str) -> str:
         conn = self._connect()
         try:
             with conn:
-                with conn.cursor() as cur:
+                with _cursor(conn) as cur:
                     cur.execute(
                         """
                         SELECT id, artwork_slug
@@ -307,7 +324,7 @@ class Store:
                         """,
                         (token_hash,),
                     )
-                    row = cur.fetchone()
+                    row = _row(cur.fetchone())
                     if row is None:
                         return "invalid"
                     cur.execute(

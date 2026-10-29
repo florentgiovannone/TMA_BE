@@ -1,3 +1,5 @@
+"""Flask admin routes for login, listings, CSV export, and stock updates."""
+
 import csv
 import io
 import secrets
@@ -36,6 +38,7 @@ def _phone_label(row: dict) -> str:
 
 
 def register_admin(application) -> None:
+    """Register admin login, listing, CSV export, and stock routes."""
     settings = application.extensions["settings"]
     store = application.extensions["store"]
     limiter = application.extensions["limiter"]

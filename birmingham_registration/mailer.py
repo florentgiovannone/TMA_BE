@@ -12,7 +12,6 @@ def confirmation_subject(artwork_title: str) -> str:
 
 def confirmation_text(artwork_title: str, confirm_url: str) -> str:
     return (
-        f"Confirm your interest in {artwork_title}.\n\n"
         "You asked to register your interest in "
         f"{artwork_title}. Open the link below within 20 minutes.\n\n"
         f"{confirm_url}\n\n"
@@ -41,6 +40,13 @@ def _card_shell(heading: str, inner_html: str) -> str:
             <td align="center" bgcolor="#f4f0e8" style="padding:32px 16px;background:#f4f0e8;background-color:#f4f0e8;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#fbf9f6" style="max-width:520px;background:#fbf9f6;background-color:#fbf9f6;">
                 <tr>
+                  <td bgcolor="#fbf9f6" style="padding:28px 32px 32px;background:#fbf9f6;background-color:#fbf9f6;border-top:3px solid #b08958;">
+                    <p style="margin:0 0 12px;font-family:'Avenir Next',Avenir,Helvetica,sans-serif;font-size:13px;letter-spacing:0.08em;color:#b08958;">Museum Association Conference</p>
+                    <h1 style="margin:0 0 16px;font-family:Georgia,serif;font-size:28px;line-height:1.2;font-weight:normal;color:#0e2347;">{safe_heading}</h1>
+                    {inner_html}
+                  </td>
+                </tr>
+                <tr>
                   <td bgcolor="#0e2347" style="background:#0e2347;background-color:#0e2347;padding:22px 32px;">
                     <table role="presentation" cellpadding="0" cellspacing="0">
                       <tr>
@@ -52,13 +58,6 @@ def _card_shell(heading: str, inner_html: str) -> str:
                         </td>
                       </tr>
                     </table>
-                  </td>
-                </tr>
-                <tr>
-                  <td bgcolor="#fbf9f6" style="padding:28px 32px 32px;background:#fbf9f6;background-color:#fbf9f6;border-top:3px solid #b08958;">
-                    <p style="margin:0 0 12px;font-family:'Avenir Next',Avenir,Helvetica,sans-serif;font-size:13px;letter-spacing:0.08em;color:#b08958;">Museum Association Conference</p>
-                    <h1 style="margin:0 0 16px;font-family:Georgia,serif;font-size:28px;line-height:1.2;font-weight:normal;color:#0e2347;">{safe_heading}</h1>
-                    {inner_html}
                   </td>
                 </tr>
               </table>
@@ -172,7 +171,9 @@ class MailgunMailer:
         self._from_address = from_address
 
     def _send(self, message: EmailMessage) -> None:
-        html_part = message.get_payload()[1]
+        html_part = message.get_body(preferencelist=("html",))
+        if not isinstance(html_part, EmailMessage):
+            raise RuntimeError("email is missing the HTML part")
         html_part.add_related(
             _MARK_PNG,
             maintype="image",

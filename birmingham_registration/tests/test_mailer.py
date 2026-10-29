@@ -26,6 +26,7 @@ def test_confirmation_email_names_the_artwork_and_the_twenty_minute_limit():
     assert "If you did not ask for this email, you can ignore it." in text
     assert "Ada" not in text
     assert "@" not in text.split("token=abc")[0]
+    assert not text.startswith(confirmation_subject("The Star of Betlehem"))
 
 
 def test_confirmation_email_uses_the_birmingham_layout():
@@ -50,6 +51,7 @@ def test_confirmation_email_uses_the_birmingham_layout():
     assert "color-scheme" in page
     assert "mix-blend-mode" not in page
     assert "Ada" not in page
+    assert page.index("Confirm my interest") < page.index("TAKE")
 
 
 def test_mailgun_sends_the_confirmation_over_smtp(monkeypatch):
