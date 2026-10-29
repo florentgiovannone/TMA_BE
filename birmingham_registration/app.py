@@ -1,4 +1,5 @@
 import logging
+import re
 import secrets
 from datetime import timedelta
 
@@ -22,6 +23,7 @@ CONFIRM_MESSAGES = {
 }
 
 REGISTRATIONS_READ_HEADER = "X-Registrations-Key"
+PACK_NUMBER = re.compile(r"^\d{3}$")
 
 
 def _constant_time_str_equal(left: str, right: str) -> bool:
@@ -104,9 +106,12 @@ def create_app(settings, store, mailer, limiter) -> Flask:
     @application.get("/api/registrations")
     def list_registrations():
         sent = request.headers.get(REGISTRATIONS_READ_HEADER, "")
-        if not _constant_time_str_equal(sent, settings.registrations_read_key):
-            return jsonify({"ok": False, "error": "unauthorized"}), 401
-        return jsonify(list_public_registrations(store, request.args.get("packNumber")))
+        pack_number = request.args.get("packNumber")
+        authorized = _constant_time_str_equal(sent, settings.registrations_read_key)
+        if not authorized:
+            if not isinstance(pack_number, str) or PACK_NUMBER.fullmatch(pack_number) is None:
+                return jsonify({"ok": False, "error": "unauthorized"}), 401
+        return jsonify(list_public_registrations(store, pack_number))
 
     @application.post("/api/registrations")
     def registrations():

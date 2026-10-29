@@ -32,6 +32,11 @@ def test_load_settings_applies_defaults_and_https_cookie_flag():
     assert settings.registrations_read_key == "read-key"
 
 
+def test_load_settings_strips_quotes_from_the_registrations_read_key():
+    settings = load_settings({**REQUIRED, "REGISTRATIONS_READ_KEY": "'read-key'"})
+    assert settings.registrations_read_key == "read-key"
+
+
 def test_load_settings_strips_the_public_url_and_lists_every_missing_name():
     with pytest.raises(RuntimeError) as error:
         load_settings({"PUBLIC_BASE_URL": "http://127.0.0.1:5051/"})
