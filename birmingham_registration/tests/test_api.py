@@ -131,6 +131,29 @@ def test_get_registrations_without_the_read_key_hides_personal_data(store):
     assert "ada@example.com" not in wrong.get_data(as_text=True)
 
 
+def test_get_registrations_pack_query_does_not_need_the_read_key(store):
+    store.set_stock("the-star-of-betlehem", 1)
+    mailer = FakeMailer()
+    client = build(store, mailer).test_client()
+    client.post("/api/registrations", json=PAYLOAD)
+    token = mailer.sent[0][2].split("token=", 1)[1]
+    client.get(f"/confirm?token={token}")
+
+    listed = client.get("/api/registrations?packNumber=001")
+    assert listed.status_code == 200
+    body = listed.get_json()
+    assert body["registrations"][0]["email"] == "ada@example.com"
+    assert body["registrations"][0]["packNumber"] == "001"
+
+    other = client.get("/api/registrations?packNumber=002")
+    assert other.status_code == 200
+    assert other.get_json() == {"registrations": []}
+
+    invalid = client.get("/api/registrations?packNumber=nope")
+    assert invalid.status_code == 401
+    assert "ada@example.com" not in invalid.get_data(as_text=True)
+
+
 def test_get_registrations_returns_confirmed_rows_only(store):
     store.set_stock("the-star-of-betlehem", 2)
     mailer = FakeMailer()
