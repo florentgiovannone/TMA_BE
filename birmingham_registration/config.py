@@ -42,13 +42,6 @@ class Settings:
         return self.public_base_url.startswith("https://")
 
 
-def _unquote(value: str) -> str:
-    trimmed = value.strip()
-    if len(trimmed) >= 2 and trimmed[0] == trimmed[-1] and trimmed[0] in {"'", '"'}:
-        return trimmed[1:-1].strip()
-    return trimmed
-
-
 def _non_negative_int_setting(environ: Mapping[str, str], name: str, default: str) -> int:
     raw = environ.get(name, default).strip() or default
     if not raw.isascii() or not raw.isdigit():
@@ -80,7 +73,7 @@ def load_settings(environ: Mapping[str, str]) -> Settings:
         secret_key=environ["SECRET_KEY"].strip(),
         public_base_url=environ["PUBLIC_BASE_URL"].strip().rstrip("/"),
         privacy_contact_email=environ["PRIVACY_CONTACT_EMAIL"].strip(),
-        registrations_read_key=_unquote(environ["REGISTRATIONS_READ_KEY"]),
+        registrations_read_key=environ["REGISTRATIONS_READ_KEY"].strip(),
         cors_origins=origins,
         port=int(environ.get("PORT", "5051").strip() or "5051"),
         trusted_proxy_hops=_non_negative_int_setting(environ, "TRUSTED_PROXY_HOPS", "0"),
