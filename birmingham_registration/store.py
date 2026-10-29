@@ -150,6 +150,20 @@ class Store:
                 )
                 return cur.fetchone()
 
+    def find_pack(self, pack_number: str) -> dict | None:
+        with self._session() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT id, status
+                    FROM registrations
+                    WHERE pack_number = %s
+                    LIMIT 1
+                    """,
+                    (pack_number,),
+                )
+                return cur.fetchone()
+
     def insert_unconfirmed(self, values: dict, token_hash: str) -> str:
         registration_id = str(uuid.uuid4())
         with self._session() as conn:
@@ -159,11 +173,11 @@ class Store:
                     INSERT INTO registrations (
                       id, name, surname, email, phone_dial_code, phone_number,
                       phone_extension, company, position, town, country,
-                      artwork_slug, status, consent_at, created_at, confirmed_at,
+                      artwork_slug, pack_number, status, consent_at, created_at, confirmed_at,
                       expires_at, token_hash
                     ) VALUES (
                       %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                      %s, 'unconfirmed', now(), now(), NULL,
+                      %s, %s, 'unconfirmed', now(), now(), NULL,
                       now() + interval '5 minutes', %s
                     )
                     """,
@@ -180,6 +194,7 @@ class Store:
                         values["town"],
                         values["country"],
                         values["artwork_slug"],
+                        values["pack_number"],
                         token_hash,
                     ),
                 )
@@ -202,6 +217,7 @@ class Store:
                       town = %s,
                       country = %s,
                       artwork_slug = %s,
+                      pack_number = %s,
                       consent_at = now(),
                       created_at = now(),
                       expires_at = now() + interval '5 minutes',
@@ -220,6 +236,7 @@ class Store:
                         values["town"],
                         values["country"],
                         values["artwork_slug"],
+                        values["pack_number"],
                         token_hash,
                         registration_id,
                     ),
@@ -264,7 +281,7 @@ class Store:
                     """
                     SELECT r.id, r.name, r.surname, r.email, r.phone_dial_code,
                            r.phone_number, r.phone_extension, r.company, r.position,
-                           r.town, r.country, a.title AS artwork_title, r.confirmed_at
+                           r.town, r.country, a.title AS artwork_title, r.pack_number, r.confirmed_at
                     FROM registrations r
                     JOIN artworks a ON a.slug = r.artwork_slug
                     WHERE r.status = 'confirmed'

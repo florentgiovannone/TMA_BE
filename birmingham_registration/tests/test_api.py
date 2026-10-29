@@ -21,7 +21,12 @@ def test_artworks_purge_removes_expired_unconfirmed_rows_but_keeps_confirmed(sto
         "73a370509b33f7d64369bf097335b57c4021bd28e33a3f12c1b622fd62222374",
     )
     store.expire_for_tests(expired_id)
-    confirmed = {**VALUES, "email": "grace@example.com", "artwork_slug": "the-golden-boys"}
+    confirmed = {
+        **VALUES,
+        "email": "grace@example.com",
+        "artwork_slug": "the-golden-boys",
+        "pack_number": "001",
+    }
     confirmed_id = store.insert_unconfirmed(
         confirmed,
         "68240addda41562dabc703d040452cbd977e8e52035a4addb58a447b3468caad",

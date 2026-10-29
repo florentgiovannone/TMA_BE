@@ -80,6 +80,7 @@ def test_admin_lists_and_exports_only_confirmed_people(store):
             "phone_number": "7700900000",
             "phone_extension": "",
             "artwork_slug": "the-golden-boys",
+            "pack_number": "002",
         },
         "923928026d5d143618c25a098db0c86677cc1994439d66ff8ed71904e10d8339",
     )
