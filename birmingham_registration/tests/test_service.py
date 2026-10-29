@@ -16,6 +16,7 @@ SETTINGS = load_settings(
         "SECRET_KEY": "a-long-secret",
         "PUBLIC_BASE_URL": "http://127.0.0.1:5051",
         "PRIVACY_CONTACT_EMAIL": "privacy@example.com",
+        "REGISTRATIONS_READ_KEY": "read-key",
     }
 )
 

@@ -178,7 +178,7 @@ class Store:
                     ) VALUES (
                       %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                       %s, %s, 'unconfirmed', now(), now(), NULL,
-                      now() + interval '5 minutes', %s
+                      now() + interval '20 minutes', %s
                     )
                     """,
                     (
@@ -220,7 +220,7 @@ class Store:
                       pack_number = %s,
                       consent_at = now(),
                       created_at = now(),
-                      expires_at = now() + interval '5 minutes',
+                      expires_at = now() + interval '20 minutes',
                       token_hash = %s
                     WHERE id = %s AND status = 'unconfirmed'
                     """,

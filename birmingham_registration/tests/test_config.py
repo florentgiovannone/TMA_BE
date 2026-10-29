@@ -12,6 +12,7 @@ REQUIRED = {
     "SECRET_KEY": "a-long-secret",
     "PUBLIC_BASE_URL": "https://interest.example.com",
     "PRIVACY_CONTACT_EMAIL": "privacy@example.com",
+    "REGISTRATIONS_READ_KEY": "read-key",
 }
 
 
@@ -28,6 +29,7 @@ def test_load_settings_applies_defaults_and_https_cookie_flag():
     assert settings.mailgun_smtp_host == "smtp.eu.mailgun.org"
     assert settings.mailgun_smtp_port == 587
     assert settings.secure_cookies is True
+    assert settings.registrations_read_key == "read-key"
 
 
 def test_load_settings_strips_the_public_url_and_lists_every_missing_name():

@@ -1,4 +1,5 @@
 import logging
+import secrets
 from datetime import timedelta
 
 from flask import Flask, jsonify, make_response, render_template, request, send_from_directory
@@ -19,6 +20,17 @@ CONFIRM_MESSAGES = {
     "invalid": "This link is invalid or has expired.",
     "unavailable": "This artwork is no longer available.",
 }
+
+REGISTRATIONS_READ_HEADER = "X-Registrations-Key"
+
+
+def _constant_time_str_equal(left: str, right: str) -> bool:
+    left_bytes = left.encode()
+    right_bytes = right.encode()
+    if len(left_bytes) != len(right_bytes):
+        secrets.compare_digest(right_bytes, right_bytes)
+        return False
+    return secrets.compare_digest(left_bytes, right_bytes)
 
 
 def _attach_redact_filter(logger_name: str) -> None:
@@ -88,6 +100,9 @@ def create_app(settings, store, mailer, limiter) -> Flask:
 
     @application.get("/api/registrations")
     def list_registrations():
+        sent = request.headers.get(REGISTRATIONS_READ_HEADER, "")
+        if not _constant_time_str_equal(sent, settings.registrations_read_key):
+            return jsonify({"ok": False, "error": "unauthorized"}), 401
         return jsonify(list_public_registrations(store, request.args.get("packNumber")))
 
     @application.post("/api/registrations")

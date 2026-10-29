@@ -14,6 +14,7 @@ REQUIRED_NAMES = (
     "SECRET_KEY",
     "PUBLIC_BASE_URL",
     "PRIVACY_CONTACT_EMAIL",
+    "REGISTRATIONS_READ_KEY",
 )
 
 
@@ -30,6 +31,7 @@ class Settings:
     secret_key: str
     public_base_url: str
     privacy_contact_email: str
+    registrations_read_key: str
     cors_origins: list[str]
     port: int
     trusted_proxy_hops: int
@@ -71,6 +73,7 @@ def load_settings(environ: Mapping[str, str]) -> Settings:
         secret_key=environ["SECRET_KEY"].strip(),
         public_base_url=environ["PUBLIC_BASE_URL"].strip().rstrip("/"),
         privacy_contact_email=environ["PRIVACY_CONTACT_EMAIL"].strip(),
+        registrations_read_key=environ["REGISTRATIONS_READ_KEY"].strip(),
         cors_origins=origins,
         port=int(environ.get("PORT", "5051").strip() or "5051"),
         trusted_proxy_hops=_non_negative_int_setting(environ, "TRUSTED_PROXY_HOPS", "0"),

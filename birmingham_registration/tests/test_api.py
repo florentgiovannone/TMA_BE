@@ -1,7 +1,9 @@
-from birmingham_registration.app import create_app
+from birmingham_registration.app import REGISTRATIONS_READ_HEADER, create_app
 from birmingham_registration.rate_limit import MemoryRateLimiter
 from birmingham_registration.tests.test_service import PAYLOAD, SETTINGS, DenyLimiter, FakeMailer
 from birmingham_registration.tests.test_store import VALUES
+
+READ_HEADERS = {REGISTRATIONS_READ_HEADER: SETTINGS.registrations_read_key}
 
 
 def build(store, mailer=None, limiter=None):
@@ -111,6 +113,24 @@ def test_post_contact_returns_400_429_and_502_on_errors(store):
     assert mail_error.get_json()["error"] == "email_failed"
 
 
+def test_get_registrations_without_the_read_key_hides_personal_data(store):
+    store.set_stock("the-star-of-betlehem", 1)
+    mailer = FakeMailer()
+    client = build(store, mailer).test_client()
+    client.post("/api/registrations", json=PAYLOAD)
+    token = mailer.sent[0][2].split("token=", 1)[1]
+    client.get(f"/confirm?token={token}")
+    listed = client.get("/api/registrations")
+    assert listed.status_code == 401
+    body = listed.get_data(as_text=True)
+    assert "ada@example.com" not in body
+    assert "Ada" not in body
+    assert listed.get_json() == {"ok": False, "error": "unauthorized"}
+    wrong = client.get("/api/registrations", headers={REGISTRATIONS_READ_HEADER: "nope"})
+    assert wrong.status_code == 401
+    assert "ada@example.com" not in wrong.get_data(as_text=True)
+
+
 def test_get_registrations_returns_confirmed_rows_only(store):
     store.set_stock("the-star-of-betlehem", 2)
     mailer = FakeMailer()
@@ -125,7 +145,7 @@ def test_get_registrations_returns_confirmed_rows_only(store):
     token = mailer.sent[0][2].split("token=", 1)[1]
     client.get(f"/confirm?token={token}")
 
-    listed = client.get("/api/registrations")
+    listed = client.get("/api/registrations", headers=READ_HEADERS)
     assert listed.status_code == 200
     body = listed.get_json()
     assert "token_hash" not in listed.get_data(as_text=True)
@@ -149,11 +169,11 @@ def test_get_registrations_returns_confirmed_rows_only(store):
         ]
     }
 
-    by_pack = client.get("/api/registrations?packNumber=001")
+    by_pack = client.get("/api/registrations?packNumber=001", headers=READ_HEADERS)
     assert by_pack.get_json() == body
-    missing = client.get("/api/registrations?packNumber=002")
+    missing = client.get("/api/registrations?packNumber=002", headers=READ_HEADERS)
     assert missing.get_json() == {"registrations": []}
-    unknown = client.get("/api/registrations?packNumber=199")
+    unknown = client.get("/api/registrations?packNumber=199", headers=READ_HEADERS)
     assert unknown.get_json() == {"registrations": []}
 
 

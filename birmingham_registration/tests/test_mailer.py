@@ -17,11 +17,12 @@ from birmingham_registration.mailer import (
 )
 
 
-def test_confirmation_email_names_the_artwork_and_the_five_minute_limit():
+def test_confirmation_email_names_the_artwork_and_the_twenty_minute_limit():
     text = confirmation_text("The Star of Betlehem", "https://interest.example.com/confirm?token=abc")
     assert "The Star of Betlehem" in text
     assert "https://interest.example.com/confirm?token=abc" in text
-    assert "5 minutes" in text
+    assert "20 minutes" in text
+    assert "5 minutes" not in text
     assert "If you did not ask for this email, you can ignore it." in text
     assert "Ada" not in text
     assert "@" not in text.split("token=abc")[0]
@@ -38,6 +39,8 @@ def test_confirmation_email_uses_the_birmingham_layout():
     assert "Museum Association Conference" in page
     assert "Birmingham Conference" not in page
     assert "Confirm my interest" in page
+    assert "20 minutes" in page
+    assert "5 minutes" not in page
     assert 'href="https://interest.example.com/confirm?token=abc"' in page
     assert f">{url}</a>" not in page
     assert 'bgcolor="#0e2347"' in page

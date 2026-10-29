@@ -14,7 +14,7 @@ def confirmation_text(artwork_title: str, confirm_url: str) -> str:
     return (
         f"Confirm your interest in {artwork_title}.\n\n"
         "You asked to register your interest in "
-        f"{artwork_title}. Open the link below within 5 minutes.\n\n"
+        f"{artwork_title}. Open the link below within 20 minutes.\n\n"
         f"{confirm_url}\n\n"
         "If you did not ask for this email, you can ignore it."
     )
@@ -74,7 +74,7 @@ def confirmation_html(artwork_title: str, confirm_url: str) -> str:
     title = html.escape(artwork_title)
     url = html.escape(confirm_url, quote=True)
     inner = (
-        f'<p style="margin:0 0 24px;font-family:\'Avenir Next\',Avenir,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#243044;">You asked to register your interest in {title}. Open the button below within 5 minutes.</p>'
+        f'<p style="margin:0 0 24px;font-family:\'Avenir Next\',Avenir,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#243044;">You asked to register your interest in {title}. Open the button below within 20 minutes.</p>'
         '<table role="presentation" cellpadding="0" cellspacing="0">'
         "<tr>"
         '<td bgcolor="#0e2347" style="background:#0e2347;background-color:#0e2347;">'

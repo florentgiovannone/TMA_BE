@@ -31,10 +31,10 @@ def test_migrate_seeds_both_artworks_at_zero_and_keeps_stock(store):
     assert store.get_artwork("the-golden-boys")["stock"] == 4
 
 
-def test_insert_expires_in_five_minutes_and_purge_removes_only_old_unconfirmed_rows(store):
+def test_insert_expires_in_twenty_minutes_and_purge_removes_only_old_unconfirmed_rows(store):
     registration_id = store.insert_unconfirmed(VALUES, "73a370509b33f7d64369bf097335b57c4021bd28e33a3f12c1b622fd62222374")
     row = store.get_registration(registration_id)
-    assert row["expires_at"] - row["created_at"] == timedelta(minutes=5)
+    assert row["expires_at"] - row["created_at"] == timedelta(minutes=20)
     assert row["status"] == "unconfirmed"
     store.expire_for_tests(registration_id)
     store.purge_expired()
