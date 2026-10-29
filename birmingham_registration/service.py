@@ -7,6 +7,17 @@ from birmingham_registration.validation import validate_contact, validate_regist
 
 LOGGER = logging.getLogger("birmingham_registration")
 
+PACK_TAKEN = {
+    "ok": False,
+    "error": "pack_taken",
+    "errors": {"packNumber": "This pack number is already registered."},
+}
+
+
+def _pack_unique_violation(exc: BaseException) -> bool:
+    name = getattr(getattr(exc, "diag", None), "constraint_name", "") or ""
+    return "pack_number" in name
+
 
 def submit_registration(store, mailer, limiter, settings, payload, ip: str) -> tuple[int, dict]:
     store.purge_expired()
@@ -37,6 +48,10 @@ def submit_registration(store, mailer, limiter, settings, payload, ip: str) -> t
             "error": "unavailable",
             "message": "That artwork is no longer available.",
         }
+    holder = store.find_pack(values["pack_number"])
+    exclude_id = existing["id"] if existing and existing["status"] == "unconfirmed" else None
+    if holder and holder["id"] != exclude_id:
+        return 409, PACK_TAKEN
     token = new_token()
     confirm_url = f"{settings.public_base_url}/confirm?token={token}"
     token_digest = hash_token(token)
@@ -50,7 +65,18 @@ def submit_registration(store, mailer, limiter, settings, payload, ip: str) -> t
                 "error": "email_failed",
                 "message": "We could not send the confirmation email. Nothing was saved.",
             }
-        if not store.replace_unconfirmed(existing["id"], values, token_digest):
+        try:
+            replaced = store.replace_unconfirmed(existing["id"], values, token_digest)
+        except psycopg2.errors.UniqueViolation as exc:
+            if _pack_unique_violation(exc):
+                return 409, PACK_TAKEN
+            LOGGER.info("confirmation email failed id=%s", existing["id"])
+            return 502, {
+                "ok": False,
+                "error": "email_failed",
+                "message": "Please try again later.",
+            }
+        if not replaced:
             LOGGER.info("confirmation email failed id=%s", existing["id"])
             return 502, {
                 "ok": False,
@@ -61,7 +87,9 @@ def submit_registration(store, mailer, limiter, settings, payload, ip: str) -> t
         return 201, {"ok": True}
     try:
         registration_id = store.insert_unconfirmed(values, token_digest)
-    except psycopg2.errors.UniqueViolation:
+    except psycopg2.errors.UniqueViolation as exc:
+        if _pack_unique_violation(exc):
+            return 409, PACK_TAKEN
         return 409, {
             "ok": False,
             "error": "please_retry",

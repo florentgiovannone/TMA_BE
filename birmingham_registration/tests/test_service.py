@@ -42,6 +42,12 @@ PAYLOAD = {
     "consent": True,
 }
 
+PACK_TAKEN = {
+    "ok": False,
+    "error": "pack_taken",
+    "errors": {"packNumber": "This pack number is already registered."},
+}
+
 
 class FakeMailer:
     def __init__(self, fail=False, fail_thank_you=False):
@@ -230,6 +236,64 @@ def test_confirmed_pair_and_zero_stock_do_not_send_mail(store):
     )
     assert status == 409
     assert body["error"] == "unavailable"
+
+
+def test_a_second_submit_for_the_same_pack_number_is_rejected(store):
+    store.set_stock("the-star-of-betlehem", 2)
+    first = FakeMailer()
+    status, body = submit_registration(
+        store, first, AllowLimiter(), SETTINGS, PAYLOAD, "10.0.0.1"
+    )
+    assert status == 201
+    status, body = submit_registration(
+        store,
+        FakeMailer(),
+        AllowLimiter(),
+        SETTINGS,
+        {**PAYLOAD, "email": "grace@example.com"},
+        "10.0.0.1",
+    )
+    assert status == 409
+    assert body == PACK_TAKEN
+    assert store.find_pair("grace@example.com", "the-star-of-betlehem") is None
+
+
+def test_replacing_an_unconfirmed_row_may_change_to_a_free_pack_number(store):
+    store.set_stock("the-star-of-betlehem", 2)
+    first = FakeMailer()
+    submit_registration(store, first, AllowLimiter(), SETTINGS, PAYLOAD, "10.0.0.1")
+    status, body = submit_registration(
+        store,
+        FakeMailer(),
+        AllowLimiter(),
+        SETTINGS,
+        {**PAYLOAD, "packNumber": "150"},
+        "10.0.0.1",
+    )
+    assert status == 201
+    assert body == {"ok": True}
+    row = store.find_pack("150")
+    assert row is not None
+    assert store.find_pack("101") is None
+
+
+def test_deleting_a_confirmed_row_frees_its_pack_number(store):
+    store.set_stock("the-star-of-betlehem", 2)
+    mailer = FakeMailer()
+    submit_registration(store, mailer, AllowLimiter(), SETTINGS, PAYLOAD, "10.0.0.1")
+    open_confirmation(store, mailer.sent[0][2].split("token=", 1)[1])
+    registration_id = store.list_confirmed()[0]["id"]
+    store.delete_confirmed(registration_id)
+    status, body = submit_registration(
+        store,
+        FakeMailer(),
+        AllowLimiter(),
+        SETTINGS,
+        {**PAYLOAD, "email": "grace@example.com"},
+        "10.0.0.1",
+    )
+    assert status == 201
+    assert body == {"ok": True}
 
 
 class DenyLimiter:
