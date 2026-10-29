@@ -140,6 +140,36 @@ def submit_contact(mailer, limiter, settings, payload, ip: str) -> tuple[int, di
     return 201, {"ok": True}
 
 
+def _blank(value) -> str:
+    return value if isinstance(value, str) else ""
+
+
+def public_registration(row: dict) -> dict:
+    return {
+        "name": row["name"],
+        "surname": row["surname"],
+        "email": row["email"],
+        "phoneDialCode": _blank(row.get("phone_dial_code")),
+        "phoneNumber": _blank(row.get("phone_number")),
+        "phoneExtension": _blank(row.get("phone_extension")),
+        "company": row["company"],
+        "position": row["position"],
+        "town": row["town"],
+        "country": row["country"],
+        "artworkSlug": row["artwork_slug"],
+        "artworkTitle": row["artwork_title"],
+        "packNumber": row.get("pack_number") or "",
+    }
+
+
+def list_public_registrations(store, pack_number: str | None) -> dict:
+    store.purge_expired()
+    rows = store.list_confirmed()
+    if pack_number is not None:
+        rows = [row for row in rows if (row.get("pack_number") or "") == pack_number]
+    return {"registrations": [public_registration(row) for row in rows]}
+
+
 def open_confirmation(store, token: str) -> str:
     store.purge_expired()
     if not token:

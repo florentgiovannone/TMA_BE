@@ -111,6 +111,61 @@ def test_post_contact_returns_400_429_and_502_on_errors(store):
     assert mail_error.get_json()["error"] == "email_failed"
 
 
+def test_get_registrations_returns_confirmed_rows_only(store):
+    store.set_stock("the-star-of-betlehem", 2)
+    mailer = FakeMailer()
+    client = build(store, mailer).test_client()
+    client.post("/api/registrations", json=PAYLOAD)
+    hidden = {
+        **PAYLOAD,
+        "email": "hidden@example.com",
+        "packNumber": "002",
+    }
+    client.post("/api/registrations", json=hidden)
+    token = mailer.sent[0][2].split("token=", 1)[1]
+    client.get(f"/confirm?token={token}")
+
+    listed = client.get("/api/registrations")
+    assert listed.status_code == 200
+    body = listed.get_json()
+    assert "token_hash" not in listed.get_data(as_text=True)
+    assert body == {
+        "registrations": [
+            {
+                "name": "Ada",
+                "surname": "Lovelace",
+                "email": "ada@example.com",
+                "phoneDialCode": "+44",
+                "phoneNumber": "7700900123",
+                "phoneExtension": "12",
+                "company": "Analytical Engines",
+                "position": "Curator",
+                "town": "Birmingham",
+                "country": "United Kingdom",
+                "artworkSlug": "the-star-of-betlehem",
+                "artworkTitle": "The Star of Betlehem",
+                "packNumber": "001",
+            }
+        ]
+    }
+
+    by_pack = client.get("/api/registrations?packNumber=001")
+    assert by_pack.get_json() == body
+    missing = client.get("/api/registrations?packNumber=002")
+    assert missing.get_json() == {"registrations": []}
+    unknown = client.get("/api/registrations?packNumber=199")
+    assert unknown.get_json() == {"registrations": []}
+
+
+def test_post_registrations_is_unchanged(store):
+    store.set_stock("the-star-of-betlehem", 1)
+    mailer = FakeMailer()
+    client = build(store, mailer).test_client()
+    response = client.post("/api/registrations", json=PAYLOAD)
+    assert response.status_code == 201
+    assert response.get_json() == {"ok": True}
+
+
 def test_confirm_without_stock_says_the_artwork_is_unavailable(store):
     store.set_stock("the-star-of-betlehem", 1)
     mailer = FakeMailer()

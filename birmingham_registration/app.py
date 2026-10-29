@@ -7,7 +7,12 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from birmingham_registration.admin import register_admin
 from birmingham_registration.redact import RedactTokenFilter
-from birmingham_registration.service import open_confirmation, submit_contact, submit_registration
+from birmingham_registration.service import (
+    list_public_registrations,
+    open_confirmation,
+    submit_contact,
+    submit_registration,
+)
 
 CONFIRM_MESSAGES = {
     "confirmed": "Your interest is registered.",
@@ -80,6 +85,10 @@ def create_app(settings, store, mailer, limiter) -> Flask:
             request.remote_addr or "",
         )
         return jsonify(body), status
+
+    @application.get("/api/registrations")
+    def list_registrations():
+        return jsonify(list_public_registrations(store, request.args.get("packNumber")))
 
     @application.post("/api/registrations")
     def registrations():

@@ -281,7 +281,8 @@ class Store:
                     """
                     SELECT r.id, r.name, r.surname, r.email, r.phone_dial_code,
                            r.phone_number, r.phone_extension, r.company, r.position,
-                           r.town, r.country, a.title AS artwork_title, r.pack_number, r.confirmed_at
+                           r.town, r.country, r.artwork_slug, a.title AS artwork_title,
+                           r.pack_number, r.confirmed_at
                     FROM registrations r
                     JOIN artworks a ON a.slug = r.artwork_slug
                     WHERE r.status = 'confirmed'
