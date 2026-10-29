@@ -16,7 +16,7 @@ VALUES = {
     "phone_number": "7700900123",
     "phone_extension": "12",
     "artwork_slug": "the-star-of-betlehem",
-    "pack_number": "101",
+    "pack_number": "001",
 }
 
 
@@ -65,7 +65,7 @@ def test_replace_updates_the_hash_and_keeps_one_unconfirmed_row(store):
 def test_purge_expired_deletes_only_the_expired_unconfirmed_row(store):
     grace = {**VALUES, "email": "grace@example.com"}
     star = {**grace, "artwork_slug": "the-star-of-betlehem"}
-    golden = {**VALUES, "email": "ada.other@example.com", "artwork_slug": "the-golden-boys", "pack_number": "001"}
+    golden = {**VALUES, "email": "ada.other@example.com", "artwork_slug": "the-golden-boys", "pack_number": "101"}
     expired_id = store.insert_unconfirmed(star, "73a370509b33f7d64369bf097335b57c4021bd28e33a3f12c1b622fd62222374")
     active_id = store.insert_unconfirmed(golden, "68240addda41562dabc703d040452cbd977e8e52035a4addb58a447b3468caad")
     store.expire_for_tests(expired_id)
@@ -101,7 +101,7 @@ def test_find_pair_prefers_a_confirmed_row_over_an_unconfirmed_one(store):
     finally:
         conn.close()
     unconfirmed_id = store.insert_unconfirmed(
-        {**VALUES, "pack_number": "102"},
+        {**VALUES, "pack_number": "002"},
         "68240addda41562dabc703d040452cbd977e8e52035a4addb58a447b3468caad",
     )
     pair = store.find_pair("ada@example.com", "the-star-of-betlehem")
@@ -146,7 +146,7 @@ def test_confirm_with_no_stock_leaves_the_token_in_place(store):
 def test_two_confirmations_cannot_take_the_last_piece(store):
     store.set_stock("the-star-of-betlehem", 1)
     store.insert_unconfirmed(VALUES, "73a370509b33f7d64369bf097335b57c4021bd28e33a3f12c1b622fd62222374")
-    other = {**VALUES, "email": "grace@example.com", "pack_number": "102"}
+    other = {**VALUES, "email": "grace@example.com", "pack_number": "002"}
     store.insert_unconfirmed(other, "68240addda41562dabc703d040452cbd977e8e52035a4addb58a447b3468caad")
     results = []
 
@@ -170,9 +170,9 @@ def test_insert_stores_pack_number_and_rejects_a_duplicate_or_wrong_range(store)
         VALUES,
         "73a370509b33f7d64369bf097335b57c4021bd28e33a3f12c1b622fd62222374",
     )
-    assert store.get_registration(registration_id)["pack_number"] == "101"
-    assert store.find_pack("101")["id"] == registration_id
-    assert store.find_pack("102") is None
+    assert store.get_registration(registration_id)["pack_number"] == "001"
+    assert store.find_pack("001")["id"] == registration_id
+    assert store.find_pack("002") is None
     with pytest.raises(psycopg2.errors.UniqueViolation):
         store.insert_unconfirmed(
             {**VALUES, "email": "grace@example.com"},
@@ -180,15 +180,15 @@ def test_insert_stores_pack_number_and_rejects_a_duplicate_or_wrong_range(store)
         )
     with pytest.raises(psycopg2.errors.CheckViolation):
         store.insert_unconfirmed(
-            {**VALUES, "email": "other@example.com", "pack_number": "001"},
+            {**VALUES, "email": "other@example.com", "pack_number": "101"},
             "923928026d5d143618c25a098db0c86677cc1994439d66ff8ed71904e10d8339",
         )
-    replaced = {**VALUES, "pack_number": "150"}
+    replaced = {**VALUES, "pack_number": "050"}
     assert store.replace_unconfirmed(
         registration_id,
         replaced,
         "68240addda41562dabc703d040452cbd977e8e52035a4addb58a447b3468caad",
     )
-    assert store.get_registration(registration_id)["pack_number"] == "150"
-    assert store.find_pack("101") is None
+    assert store.get_registration(registration_id)["pack_number"] == "050"
+    assert store.find_pack("001") is None
     assert store.list_confirmed() == []

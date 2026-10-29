@@ -57,16 +57,33 @@ ALTER TABLE registrations ADD CONSTRAINT registrations_pack_number_format
   CHECK (pack_number IS NULL OR pack_number ~ '^[0-9]{3}$');
 
 ALTER TABLE registrations DROP CONSTRAINT IF EXISTS registrations_pack_number_range;
-ALTER TABLE registrations ADD CONSTRAINT registrations_pack_number_range
-  CHECK (
-    pack_number IS NULL
-    OR (
-      artwork_slug = 'the-golden-boys'
+
+UPDATE registrations
+SET pack_number = NULL
+WHERE pack_number IS NOT NULL
+  AND NOT (
+    (
+      artwork_slug = 'the-star-of-betlehem'
       AND pack_number >= '001'
       AND pack_number <= '100'
     )
     OR (
+      artwork_slug = 'the-golden-boys'
+      AND pack_number >= '101'
+      AND pack_number <= '200'
+    )
+  );
+
+ALTER TABLE registrations ADD CONSTRAINT registrations_pack_number_range
+  CHECK (
+    pack_number IS NULL
+    OR (
       artwork_slug = 'the-star-of-betlehem'
+      AND pack_number >= '001'
+      AND pack_number <= '100'
+    )
+    OR (
+      artwork_slug = 'the-golden-boys'
       AND pack_number >= '101'
       AND pack_number <= '200'
     )

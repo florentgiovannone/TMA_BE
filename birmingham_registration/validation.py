@@ -7,8 +7,8 @@ PHONE_DIGITS = re.compile(r"^[0-9]{4,15}$")
 EXTENSION_DIGITS = re.compile(r"^[0-9]{1,10}$")
 PACK_DIGITS = re.compile(r"^[0-9]{3}$")
 PACK_RANGES = {
-    "the-golden-boys": ("001", "100", "Enter a pack number from 001 to 100."),
-    "the-star-of-betlehem": ("101", "200", "Enter a pack number from 101 to 200."),
+    "the-star-of-betlehem": ("001", "100", "Enter a pack number from 001 to 100."),
+    "the-golden-boys": ("101", "200", "Enter a pack number from 101 to 200."),
 }
 LIMITS = {
     "name": 100,

@@ -38,7 +38,7 @@ PAYLOAD = {
     "phoneNumber": "7700900123",
     "phoneExtension": "12",
     "artworkSlug": "the-star-of-betlehem",
-    "packNumber": "101",
+    "packNumber": "001",
     "consent": True,
 }
 
@@ -196,7 +196,7 @@ def test_an_unconfirmed_email_can_resubmit_for_another_artwork_immediately(store
         pending,
         AllowLimiter(),
         SETTINGS,
-        {**PAYLOAD, "artworkSlug": "the-golden-boys", "packNumber": "001"},
+        {**PAYLOAD, "artworkSlug": "the-golden-boys", "packNumber": "101"},
         "10.0.0.1",
     )
     assert status == 201
@@ -267,14 +267,14 @@ def test_replacing_an_unconfirmed_row_may_change_to_a_free_pack_number(store):
         FakeMailer(),
         AllowLimiter(),
         SETTINGS,
-        {**PAYLOAD, "packNumber": "150"},
+        {**PAYLOAD, "packNumber": "050"},
         "10.0.0.1",
     )
     assert status == 201
     assert body == {"ok": True}
-    row = store.find_pack("150")
+    row = store.find_pack("050")
     assert row is not None
-    assert store.find_pack("101") is None
+    assert store.find_pack("001") is None
 
 
 def test_deleting_a_confirmed_row_frees_its_pack_number(store):

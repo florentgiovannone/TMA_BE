@@ -19,7 +19,7 @@ VALID = {
     "phoneNumber": "7700900123",
     "phoneExtension": "12",
     "artworkSlug": "the-star-of-betlehem",
-    "packNumber": "101",
+    "packNumber": "001",
     "consent": True,
 }
 
@@ -29,7 +29,7 @@ def test_accepts_a_complete_registration_and_lowercases_email():
     assert result["ok"] is True
     assert result["values"]["email"] == "ada@example.com"
     assert result["values"]["artwork_slug"] == "the-star-of-betlehem"
-    assert validate_registration({**VALID, "artworkSlug": "the-golden-boys", "packNumber": "001"})["ok"] is True
+    assert validate_registration({**VALID, "artworkSlug": "the-golden-boys", "packNumber": "101"})["ok"] is True
     without_phone = validate_registration({**VALID, "phoneNumber": "", "phoneDialCode": ""})
     assert without_phone["ok"] is True
     assert without_phone["values"]["phone_number"] == ""
@@ -89,27 +89,29 @@ def test_rejects_a_pack_number_that_is_not_three_digits():
 
 
 def test_rejects_a_pack_number_outside_the_chosen_artwork_range():
-    assert validate_registration(
-        {**VALID, "artworkSlug": "the-golden-boys", "packNumber": "000"}
-    )["errors"] == {"packNumber": "Enter a pack number from 001 to 100."}
+    assert validate_registration({**VALID, "packNumber": "000"})["errors"] == {
+        "packNumber": "Enter a pack number from 001 to 100."
+    }
+    assert validate_registration({**VALID, "packNumber": "101"})["errors"] == {
+        "packNumber": "Enter a pack number from 001 to 100."
+    }
+    assert validate_registration({**VALID, "packNumber": "100"})["ok"] is True
     assert validate_registration(
         {**VALID, "artworkSlug": "the-golden-boys", "packNumber": "101"}
-    )["errors"] == {"packNumber": "Enter a pack number from 001 to 100."}
+    )["ok"] is True
+    assert validate_registration(
+        {**VALID, "artworkSlug": "the-golden-boys", "packNumber": "200"}
+    )["ok"] is True
     assert validate_registration(
         {**VALID, "artworkSlug": "the-golden-boys", "packNumber": "100"}
-    )["ok"] is True
-    assert validate_registration({**VALID, "packNumber": "101"})["ok"] is True
-    assert validate_registration({**VALID, "packNumber": "200"})["ok"] is True
-    assert validate_registration({**VALID, "packNumber": "100"})["errors"] == {
-        "packNumber": "Enter a pack number from 101 to 200."
-    }
-    assert validate_registration({**VALID, "packNumber": "201"})["errors"] == {
-        "packNumber": "Enter a pack number from 101 to 200."
-    }
+    )["errors"] == {"packNumber": "Enter a pack number from 101 to 200."}
+    assert validate_registration(
+        {**VALID, "artworkSlug": "the-golden-boys", "packNumber": "201"}
+    )["errors"] == {"packNumber": "Enter a pack number from 101 to 200."}
 
 
 def test_stores_the_three_digit_pack_number():
-    assert validate_registration(VALID)["values"]["pack_number"] == "101"
+    assert validate_registration(VALID)["values"]["pack_number"] == "001"
 
 
 def test_validate_contact_accepts_valid_payload_and_optional_organisation():

@@ -25,7 +25,7 @@ def test_artworks_purge_removes_expired_unconfirmed_rows_but_keeps_confirmed(sto
         **VALUES,
         "email": "grace@example.com",
         "artwork_slug": "the-golden-boys",
-        "pack_number": "001",
+        "pack_number": "101",
     }
     confirmed_id = store.insert_unconfirmed(
         confirmed,
