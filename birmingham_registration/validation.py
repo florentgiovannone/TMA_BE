@@ -5,6 +5,11 @@ from birmingham_registration.countries import COUNTRY_NAMES, DIAL_CODES
 EMAIL = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 PHONE_DIGITS = re.compile(r"^[0-9]{4,15}$")
 EXTENSION_DIGITS = re.compile(r"^[0-9]{1,10}$")
+PACK_DIGITS = re.compile(r"^[0-9]{3}$")
+PACK_RANGES = {
+    "the-golden-boys": ("001", "100", "Enter a pack number from 001 to 100."),
+    "the-star-of-betlehem": ("101", "200", "Enter a pack number from 101 to 200."),
+}
 LIMITS = {
     "name": 100,
     "surname": 100,
@@ -118,6 +123,16 @@ def validate_registration(payload: object) -> dict:
         errors["artworkSlug"] = "Choose an artwork."
     else:
         values["artwork_slug"] = slug
+    raw_pack = data.get("packNumber", "")
+    pack = raw_pack.strip() if isinstance(raw_pack, str) else ""
+    if not PACK_DIGITS.match(pack):
+        errors["packNumber"] = "Enter a 3-digit pack number."
+    else:
+        pack_range = PACK_RANGES.get(slug)
+        if pack_range and (pack < pack_range[0] or pack > pack_range[1]):
+            errors["packNumber"] = pack_range[2]
+        else:
+            values["pack_number"] = pack
     if data.get("consent") is not True:
         errors["consent"] = "Confirm that we may store these details."
     else:

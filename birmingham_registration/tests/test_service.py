@@ -38,6 +38,7 @@ PAYLOAD = {
     "phoneNumber": "7700900123",
     "phoneExtension": "12",
     "artworkSlug": "the-star-of-betlehem",
+    "packNumber": "101",
     "consent": True,
 }
 
@@ -189,7 +190,7 @@ def test_an_unconfirmed_email_can_resubmit_for_another_artwork_immediately(store
         pending,
         AllowLimiter(),
         SETTINGS,
-        {**PAYLOAD, "artworkSlug": "the-golden-boys"},
+        {**PAYLOAD, "artworkSlug": "the-golden-boys", "packNumber": "001"},
         "10.0.0.1",
     )
     assert status == 201

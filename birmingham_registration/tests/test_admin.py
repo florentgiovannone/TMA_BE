@@ -62,6 +62,7 @@ def test_admin_lists_and_exports_only_confirmed_people(store):
         "name": FORMULA_NAME,
         "email": "formula@example.com",
         "artworkSlug": "the-golden-boys",
+        "packNumber": "001",
     }
     client.post("/api/registrations", json=formula_payload)
     formula_token = mailer.sent[1][2].split("token=", 1)[1]
