@@ -18,7 +18,7 @@ VALID = {
     "phoneDialCode": "+44",
     "phoneNumber": "7700900123",
     "phoneExtension": "12",
-    "artworkSlug": "the-star-of-bethlehem",
+    "artworkSlug": "the-star-of-betlehem",
     "consent": True,
 }
 
@@ -27,7 +27,7 @@ def test_accepts_a_complete_registration_and_lowercases_email():
     result = validate_registration(VALID)
     assert result["ok"] is True
     assert result["values"]["email"] == "ada@example.com"
-    assert result["values"]["artwork_slug"] == "the-star-of-bethlehem"
+    assert result["values"]["artwork_slug"] == "the-star-of-betlehem"
     assert validate_registration({**VALID, "artworkSlug": "the-golden-boys"})["ok"] is True
     without_phone = validate_registration({**VALID, "phoneNumber": "", "phoneDialCode": ""})
     assert without_phone["ok"] is True

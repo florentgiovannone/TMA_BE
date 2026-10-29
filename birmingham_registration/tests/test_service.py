@@ -37,7 +37,7 @@ PAYLOAD = {
     "phoneDialCode": "+44",
     "phoneNumber": "7700900123",
     "phoneExtension": "12",
-    "artworkSlug": "the-star-of-bethlehem",
+    "artworkSlug": "the-star-of-betlehem",
     "consent": True,
 }
 
@@ -86,7 +86,7 @@ class InsertUniqueViolationStore:
 
 
 def test_insert_unique_violation_returns_please_retry_without_email(store):
-    store.set_stock("the-star-of-bethlehem", 1)
+    store.set_stock("the-star-of-betlehem", 1)
     mailer = FakeMailer()
     status, body = submit_registration(
         InsertUniqueViolationStore(store),
@@ -106,7 +106,7 @@ def test_insert_unique_violation_returns_please_retry_without_email(store):
 
 
 def test_first_submit_saves_a_hashed_token_and_emails_the_raw_token(store, caplog):
-    store.set_stock("the-star-of-bethlehem", 2)
+    store.set_stock("the-star-of-betlehem", 2)
     mailer = FakeMailer()
     caplog.set_level(logging.INFO)
     status, body = submit_registration(
@@ -120,22 +120,22 @@ def test_first_submit_saves_a_hashed_token_and_emails_the_raw_token(store, caplo
     assert token not in caplog.text
     assert "ada@example.com" not in caplog.text
     assert open_confirmation(store, token) == "confirmed"
-    assert store.get_artwork("the-star-of-bethlehem")["stock"] == 1
+    assert store.get_artwork("the-star-of-betlehem")["stock"] == 1
 
 
 def test_first_send_failure_leaves_no_row(store):
-    store.set_stock("the-star-of-bethlehem", 1)
+    store.set_stock("the-star-of-betlehem", 1)
     status, body = submit_registration(
         store, FakeMailer(fail=True), AllowLimiter(), SETTINGS, PAYLOAD, "10.0.0.1"
     )
     assert status == 502
     assert body["error"] == "email_failed"
-    assert store.find_pair("ada@example.com", "the-star-of-bethlehem") is None
-    assert store.get_artwork("the-star-of-bethlehem")["stock"] == 1
+    assert store.find_pair("ada@example.com", "the-star-of-betlehem") is None
+    assert store.get_artwork("the-star-of-betlehem")["stock"] == 1
 
 
 def test_repeat_replace_miss_returns_502_and_keeps_the_previous_link(store, monkeypatch):
-    store.set_stock("the-star-of-bethlehem", 1)
+    store.set_stock("the-star-of-betlehem", 1)
     first = FakeMailer()
     submit_registration(store, first, AllowLimiter(), SETTINGS, PAYLOAD, "10.0.0.1")
     first_token = first.sent[0][2].split("token=", 1)[1]
@@ -153,7 +153,7 @@ def test_repeat_replace_miss_returns_502_and_keeps_the_previous_link(store, monk
 
 
 def test_repeat_send_failure_keeps_the_previous_link(store):
-    store.set_stock("the-star-of-bethlehem", 1)
+    store.set_stock("the-star-of-betlehem", 1)
     first = FakeMailer()
     submit_registration(store, first, AllowLimiter(), SETTINGS, PAYLOAD, "10.0.0.1")
     first_token = first.sent[0][2].split("token=", 1)[1]
@@ -165,7 +165,7 @@ def test_repeat_send_failure_keeps_the_previous_link(store):
 
 
 def test_repeat_success_retires_the_previous_token(store):
-    store.set_stock("the-star-of-bethlehem", 2)
+    store.set_stock("the-star-of-betlehem", 2)
     first = FakeMailer()
     submit_registration(store, first, AllowLimiter(), SETTINGS, PAYLOAD, "10.0.0.1")
     first_token = first.sent[0][2].split("token=", 1)[1]
@@ -174,11 +174,11 @@ def test_repeat_success_retires_the_previous_token(store):
     second_token = second.sent[0][2].split("token=", 1)[1]
     assert open_confirmation(store, first_token) == "invalid"
     assert open_confirmation(store, second_token) == "confirmed"
-    assert store.get_artwork("the-star-of-bethlehem")["stock"] == 1
+    assert store.get_artwork("the-star-of-betlehem")["stock"] == 1
 
 
 def test_an_unconfirmed_email_can_resubmit_for_another_artwork_immediately(store):
-    store.set_stock("the-star-of-bethlehem", 2)
+    store.set_stock("the-star-of-betlehem", 2)
     store.set_stock("the-golden-boys", 2)
     mailer = FakeMailer()
     submit_registration(store, mailer, AllowLimiter(), SETTINGS, PAYLOAD, "10.0.0.1")
@@ -197,7 +197,7 @@ def test_an_unconfirmed_email_can_resubmit_for_another_artwork_immediately(store
     second_token = pending.sent[0][2].split("token=", 1)[1]
     assert open_confirmation(store, first_token) == "invalid"
     assert open_confirmation(store, second_token) == "confirmed"
-    assert store.get_artwork("the-star-of-bethlehem")["stock"] == 2
+    assert store.get_artwork("the-star-of-betlehem")["stock"] == 2
     assert store.get_artwork("the-golden-boys")["stock"] == 1
     again = FakeMailer()
     status, body = submit_registration(
@@ -205,7 +205,7 @@ def test_an_unconfirmed_email_can_resubmit_for_another_artwork_immediately(store
         again,
         AllowLimiter(),
         SETTINGS,
-        {**PAYLOAD, "artworkSlug": "the-star-of-bethlehem"},
+        {**PAYLOAD, "artworkSlug": "the-star-of-betlehem"},
         "10.0.0.1",
     )
     assert status == 409
@@ -214,7 +214,7 @@ def test_an_unconfirmed_email_can_resubmit_for_another_artwork_immediately(store
 
 
 def test_confirmed_pair_and_zero_stock_do_not_send_mail(store):
-    store.set_stock("the-star-of-bethlehem", 1)
+    store.set_stock("the-star-of-betlehem", 1)
     mailer = FakeMailer()
     submit_registration(store, mailer, AllowLimiter(), SETTINGS, PAYLOAD, "10.0.0.1")
     open_confirmation(store, mailer.sent[0][2].split("token=", 1)[1])
@@ -240,13 +240,13 @@ class DenyLimiter:
 
 
 def test_over_the_limit_saves_nothing(store):
-    store.set_stock("the-star-of-bethlehem", 1)
+    store.set_stock("the-star-of-betlehem", 1)
     status, body = submit_registration(
         store, FakeMailer(), DenyLimiter(), SETTINGS, PAYLOAD, "10.0.0.1"
     )
     assert status == 429
     assert body["error"] == "too_many_requests"
-    assert store.find_pair("ada@example.com", "the-star-of-bethlehem") is None
+    assert store.find_pair("ada@example.com", "the-star-of-betlehem") is None
 
 
 def test_blank_fields_save_nothing(store):

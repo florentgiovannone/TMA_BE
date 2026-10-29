@@ -50,7 +50,7 @@ def test_wrong_password_does_not_open_the_admin_list(store):
 
 
 def test_admin_lists_and_exports_only_confirmed_people(store):
-    store.set_stock("the-star-of-bethlehem", 1)
+    store.set_stock("the-star-of-betlehem", 1)
     store.set_stock("the-golden-boys", 1)
     mailer = FakeMailer()
     client = build(store, mailer).test_client()
@@ -87,7 +87,7 @@ def test_admin_lists_and_exports_only_confirmed_people(store):
     assert b"Birmingham Conference" not in page.data
     assert b"Ada" in page.data
     assert b"Hidden" not in page.data
-    assert b"The Star of Bethlehem" in page.data
+    assert b"The Star of Betlehem" in page.data
     csv_response = client.get("/admin/registrations.csv")
     text = csv_response.get_data(as_text=True)
     assert "ada@example.com" in text
@@ -102,13 +102,13 @@ def test_admin_lists_and_exports_only_confirmed_people(store):
 
 
 def test_delete_removes_the_person_and_returns_their_stock(store):
-    store.set_stock("the-star-of-bethlehem", 2)
+    store.set_stock("the-star-of-betlehem", 2)
     mailer = FakeMailer()
     client = build(store, mailer).test_client()
     client.post("/api/registrations", json=PAYLOAD)
     token = mailer.sent[0][2].split("token=", 1)[1]
     client.get(f"/confirm?token={token}")
-    assert store.get_artwork("the-star-of-bethlehem")["stock"] == 1
+    assert store.get_artwork("the-star-of-betlehem")["stock"] == 1
     log_in(client)
     registration_id = store.list_confirmed()[0]["id"]
     page = client.get("/admin")
@@ -119,7 +119,7 @@ def test_delete_removes_the_person_and_returns_their_stock(store):
         follow_redirects=True,
     )
     assert store.list_confirmed() == []
-    assert store.get_artwork("the-star-of-bethlehem")["stock"] == 2
+    assert store.get_artwork("the-star-of-betlehem")["stock"] == 2
     assert store.get_artwork("the-golden-boys")["stock"] == 0
 
 

@@ -23,7 +23,7 @@ BLANK = {
     "town": "Enter the town.",
     "country": "Choose a country.",
 }
-ARTWORK_SLUGS = ("the-star-of-bethlehem", "the-golden-boys")
+ARTWORK_SLUGS = ("the-star-of-betlehem", "the-golden-boys")
 CONTACT_LIMITS = {
     "name": 100,
     "email": 254,

@@ -39,6 +39,13 @@ CREATE UNIQUE INDEX IF NOT EXISTS registrations_token_hash
   WHERE token_hash IS NOT NULL;
 
 INSERT INTO artworks (slug, title, stock) VALUES
-  ('the-star-of-bethlehem', 'The Star of Bethlehem', 0),
+  ('the-star-of-betlehem', 'The Star of Betlehem', 0),
   ('the-golden-boys', 'The Golden Boys', 0)
-ON CONFLICT (slug) DO NOTHING;
+ON CONFLICT (slug) DO UPDATE SET title = EXCLUDED.title;
+
+UPDATE registrations
+SET artwork_slug = 'the-star-of-betlehem'
+WHERE artwork_slug <> ALL (ARRAY['the-star-of-betlehem', 'the-golden-boys']);
+
+DELETE FROM artworks
+WHERE slug <> ALL (ARRAY['the-star-of-betlehem', 'the-golden-boys']);

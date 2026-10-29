@@ -18,8 +18,8 @@ from birmingham_registration.mailer import (
 
 
 def test_confirmation_email_names_the_artwork_and_the_five_minute_limit():
-    text = confirmation_text("The Star of Bethlehem", "https://interest.example.com/confirm?token=abc")
-    assert "The Star of Bethlehem" in text
+    text = confirmation_text("The Star of Betlehem", "https://interest.example.com/confirm?token=abc")
+    assert "The Star of Betlehem" in text
     assert "https://interest.example.com/confirm?token=abc" in text
     assert "5 minutes" in text
     assert "If you did not ask for this email, you can ignore it." in text
@@ -29,8 +29,8 @@ def test_confirmation_email_names_the_artwork_and_the_five_minute_limit():
 
 def test_confirmation_email_uses_the_birmingham_layout():
     url = "https://interest.example.com/confirm?token=abc"
-    page = confirmation_html("The Star of Bethlehem", url)
-    assert confirmation_subject("The Star of Bethlehem") == "Confirm your interest in The Star of Bethlehem"
+    page = confirmation_html("The Star of Betlehem", url)
+    assert confirmation_subject("The Star of Betlehem") == "Confirm your interest in The Star of Betlehem"
     assert "TAKE" in page
     assert "ME" in page
     assert "AROUND" in page
@@ -83,7 +83,7 @@ def test_mailgun_sends_the_confirmation_over_smtp(monkeypatch):
         "Interest <confirmation@mg.example.com>",
     ).send_confirmation(
         "ada@example.com",
-        "The Star of Bethlehem",
+        "The Star of Betlehem",
         "https://interest.example.com/confirm?token=abc",
     )
     assert captured["host"] == "smtp.eu.mailgun.org"
@@ -101,7 +101,7 @@ def test_mailgun_sends_the_confirmation_over_smtp(monkeypatch):
     ]
     body = "\n".join(bodies)
     assert message["To"] == "ada@example.com"
-    assert message["Subject"] == "Confirm your interest in The Star of Bethlehem"
+    assert message["Subject"] == "Confirm your interest in The Star of Betlehem"
     assert "cid:brand-mark.png" in body
     assert "https://interest.example.com/confirm?token=abc" in body
 

@@ -44,7 +44,7 @@ def test_health_and_artworks_hide_nothing_and_expose_the_privacy_contact(store):
 
 
 def test_post_then_confirm_shows_the_thank_you_page_once(store):
-    store.set_stock("the-star-of-bethlehem", 1)
+    store.set_stock("the-star-of-betlehem", 1)
     mailer = FakeMailer()
     client = build(store, mailer).test_client()
     response = client.post("/api/registrations", json=PAYLOAD)
@@ -60,7 +60,7 @@ def test_post_then_confirm_shows_the_thank_you_page_once(store):
     assert token.encode() not in page.data
     again = client.get(f"/confirm?token={token}")
     assert b"This link is invalid or has expired." in again.data
-    assert store.get_artwork("the-star-of-bethlehem")["stock"] == 0
+    assert store.get_artwork("the-star-of-betlehem")["stock"] == 0
 
 
 def test_post_contact_sends_service_and_thank_you_emails(store):
@@ -107,12 +107,12 @@ def test_post_contact_returns_400_429_and_502_on_errors(store):
 
 
 def test_confirm_without_stock_says_the_artwork_is_unavailable(store):
-    store.set_stock("the-star-of-bethlehem", 1)
+    store.set_stock("the-star-of-betlehem", 1)
     mailer = FakeMailer()
     client = build(store, mailer).test_client()
     client.post("/api/registrations", json=PAYLOAD)
-    store.set_stock("the-star-of-bethlehem", 0)
+    store.set_stock("the-star-of-betlehem", 0)
     token = mailer.sent[0][2].split("token=", 1)[1]
     page = client.get(f"/confirm?token={token}")
     assert b"This artwork is no longer available." in page.data
-    assert store.find_pair("ada@example.com", "the-star-of-bethlehem")["status"] == "unconfirmed"
+    assert store.find_pair("ada@example.com", "the-star-of-betlehem")["status"] == "unconfirmed"
