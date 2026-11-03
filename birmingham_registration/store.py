@@ -319,11 +319,11 @@ class Store:
                     INSERT INTO registrations (
                       id, name, surname, email, phone_dial_code, phone_number,
                       phone_extension, company, position, town, country,
-                      artwork_slug, pack_number, status, consent_at, created_at, confirmed_at,
+                      artwork_slug, pack_number, source_tag, status, consent_at, created_at, confirmed_at,
                       expires_at, token_hash
                     ) VALUES (
                       %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                      %s, %s, 'unconfirmed', now(), now(), NULL,
+                      %s, %s, %s, 'unconfirmed', now(), now(), NULL,
                       now() + interval '20 minutes', %s
                     )
                     """,
@@ -341,6 +341,7 @@ class Store:
                         values["country"],
                         values["artwork_slug"],
                         values["pack_number"],
+                        values.get("source_tag"),
                         token_hash,
                     ),
                 )
@@ -364,6 +365,7 @@ class Store:
                       country = %s,
                       artwork_slug = %s,
                       pack_number = %s,
+                      source_tag = %s,
                       consent_at = now(),
                       created_at = now(),
                       expires_at = now() + interval '20 minutes',
@@ -383,6 +385,7 @@ class Store:
                         values["country"],
                         values["artwork_slug"],
                         values["pack_number"],
+                        values.get("source_tag"),
                         token_hash,
                         registration_id,
                     ),
@@ -438,13 +441,16 @@ class Store:
                 return _rows(cur.fetchall())
 
     def confirm(self, token_hash: str) -> str:
+        return self.confirm_details(token_hash)["status"]
+
+    def confirm_details(self, token_hash: str) -> dict:
         conn = self._connect()
         try:
             with conn:
                 with _cursor(conn) as cur:
                     cur.execute(
                         """
-                        SELECT id, artwork_slug
+                        SELECT id, artwork_slug, source_tag
                         FROM registrations
                         WHERE token_hash = %s
                           AND status = 'unconfirmed'
@@ -455,7 +461,7 @@ class Store:
                     )
                     row = _row(cur.fetchone())
                     if row is None:
-                        return "invalid"
+                        return {"status": "invalid", "source_tag": None}
                     cur.execute(
                         """
                         UPDATE artworks
@@ -465,7 +471,8 @@ class Store:
                         """,
                         (row["artwork_slug"],),
                     )
-                    if cur.fetchone() is None:
+                    subtracted = cur.fetchone()
+                    if subtracted is None and not row.get("source_tag"):
                         raise _StockUnavailable()
                     cur.execute(
                         """
@@ -477,10 +484,10 @@ class Store:
                         """,
                         (row["id"],),
                     )
-            return "confirmed"
+            return {"status": "confirmed", "source_tag": row.get("source_tag")}
         except _StockUnavailable:
-            return "unavailable"
+            return {"status": "unavailable", "source_tag": None}
         except psycopg2.errors.UniqueViolation:
-            return "invalid"
+            return {"status": "invalid", "source_tag": None}
         finally:
             conn.close()

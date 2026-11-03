@@ -92,3 +92,12 @@ ALTER TABLE registrations ADD CONSTRAINT registrations_pack_number_range
 CREATE UNIQUE INDEX IF NOT EXISTS registrations_pack_number
   ON registrations (pack_number)
   WHERE pack_number IS NOT NULL;
+
+ALTER TABLE registrations ADD COLUMN IF NOT EXISTS source_tag varchar(32);
+
+ALTER TABLE registrations DROP CONSTRAINT IF EXISTS registrations_source_tag_format;
+ALTER TABLE registrations ADD CONSTRAINT registrations_source_tag_format
+  CHECK (
+    source_tag IS NULL
+    OR source_tag ~ '^(MACD(00[1-9]|0[1-9][0-9]|1[0-9][0-9]|200)|MACTSOB(00[1-9]|0[1-9][0-9]|100)|MACTGB(00[1-9]|0[1-9][0-9]|100))$'
+  );

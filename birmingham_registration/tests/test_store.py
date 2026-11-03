@@ -229,3 +229,28 @@ def test_two_confirmed_rows_can_share_a_blank_email(store):
         ("Grace", "", "002"),
     ]
     assert store.get_artwork("the-star-of-betlehem")["stock"] == 0
+
+
+def test_insert_unconfirmed_stores_source_tag(store):
+    registration_id = store.insert_unconfirmed(
+        {**VALUES, "source_tag": "MACTGB003", "pack_number": "103", "artwork_slug": "the-golden-boys"},
+        "73a370509b33f7d64369bf097335b57c4021bd28e33a3f12c1b622fd62222374",
+    )
+    row = store.get_registration(registration_id)
+    assert row["source_tag"] == "MACTGB003"
+    booth_id = store.insert_unconfirmed(
+        {**VALUES, "email": "grace@example.com", "pack_number": "002"},
+        "68240addda41562dabc703d040452cbd977e8e52035a4addb58a447b3468caad",
+    )
+    assert store.get_registration(booth_id)["source_tag"] is None
+
+
+def test_pack_claim_confirm_succeeds_when_stock_is_zero(store):
+    registration_id = store.insert_unconfirmed(
+        {**VALUES, "source_tag": "MACTSOB001"},
+        "73a370509b33f7d64369bf097335b57c4021bd28e33a3f12c1b622fd62222374",
+    )
+    details = store.confirm_details("73a370509b33f7d64369bf097335b57c4021bd28e33a3f12c1b622fd62222374")
+    assert details == {"status": "confirmed", "source_tag": "MACTSOB001"}
+    assert store.get_registration(registration_id)["status"] == "confirmed"
+    assert store.get_artwork("the-star-of-betlehem")["stock"] == 0
