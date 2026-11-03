@@ -86,6 +86,36 @@ def confirmation_html(artwork_title: str, confirm_url: str) -> str:
     return _card_shell("Confirm your interest", inner)
 
 
+def pack_claim_confirmation_subject(artwork_title: str) -> str:
+    return f"Confirm your email to unlock {artwork_title}"
+
+
+def pack_claim_confirmation_text(artwork_title: str, confirm_url: str) -> str:
+    return (
+        "You asked to unlock the full experience for "
+        f"{artwork_title}. Open the link below within 20 minutes to confirm your email address.\n\n"
+        f"{confirm_url}\n\n"
+        "If you did not ask for this email, you can ignore it."
+    )
+
+
+def pack_claim_confirmation_html(artwork_title: str, confirm_url: str) -> str:
+    title = html.escape(artwork_title)
+    url = html.escape(confirm_url, quote=True)
+    inner = (
+        f'<p style="margin:0 0 24px;font-family:\'Avenir Next\',Avenir,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#243044;">You asked to unlock the full experience for {title}. Open the button below within 20 minutes to confirm your email address.</p>'
+        '<table role="presentation" cellpadding="0" cellspacing="0">'
+        "<tr>"
+        '<td bgcolor="#0e2347" style="background:#0e2347;background-color:#0e2347;">'
+        f'<a href="{url}" style="display:inline-block;padding:14px 22px;font-family:\'Avenir Next\',Avenir,Helvetica,sans-serif;font-size:15px;color:#f7f3ea;text-decoration:none;">Confirm my email</a>'
+        "</td>"
+        "</tr>"
+        "</table>"
+        '<p style="margin:24px 0 0;font-family:\'Avenir Next\',Avenir,Helvetica,sans-serif;font-size:13px;line-height:1.5;color:#243044;">If you did not ask for this email, you can ignore it.</p>'
+    )
+    return _card_shell("Unlock the full experience", inner)
+
+
 def contact_thank_you_subject() -> str:
     return "Thank you for contacting Take Me Around"
 
@@ -203,6 +233,17 @@ class MailgunMailer:
         message["Subject"] = confirmation_subject(artwork_title)
         message.set_content(confirmation_text(artwork_title, confirm_url))
         message.add_alternative(confirmation_html(artwork_title, confirm_url), subtype="html")
+        self._send(message)
+
+    def send_pack_claim_confirmation(self, to_email: str, artwork_title: str, confirm_url: str) -> None:
+        message = EmailMessage()
+        message["From"] = self._from_address
+        message["To"] = to_email
+        message["Subject"] = pack_claim_confirmation_subject(artwork_title)
+        message.set_content(pack_claim_confirmation_text(artwork_title, confirm_url))
+        message.add_alternative(
+            pack_claim_confirmation_html(artwork_title, confirm_url), subtype="html"
+        )
         self._send(message)
 
     def send_contact_thank_you(self, to_email: str, name: str) -> None:

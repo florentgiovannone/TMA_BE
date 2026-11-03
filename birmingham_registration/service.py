@@ -3,7 +3,12 @@ import logging
 import psycopg2
 
 from birmingham_registration.tokens import hash_token, new_token
-from birmingham_registration.validation import validate_contact, validate_registration
+from birmingham_registration.validation import (
+    claimed_redirect_url,
+    validate_contact,
+    validate_pack_claim,
+    validate_registration,
+)
 
 LOGGER = logging.getLogger("birmingham_registration")
 
@@ -175,3 +180,104 @@ def open_confirmation(store, token: str) -> str:
     if not token:
         return "invalid"
     return store.confirm(hash_token(token))
+
+
+def submit_pack_claim(store, mailer, limiter, settings, payload, ip: str) -> tuple[int, dict]:
+    store.purge_expired()
+    email = ""
+    if isinstance(payload, dict) and isinstance(payload.get("email"), str):
+        email = payload["email"].strip().lower()
+    if not limiter.allow_registration(email, ip):
+        return 429, {
+            "ok": False,
+            "error": "too_many_requests",
+            "message": "Please try again later.",
+        }
+    checked = validate_pack_claim(payload)
+    if not checked["ok"]:
+        return 400, {"ok": False, "errors": checked["errors"]}
+    values = checked["values"]
+    artwork = store.get_artwork(values["artwork_slug"])
+    if artwork is None:
+        return 400, {"ok": False, "errors": {"tagCode": "Enter a valid pack tag."}}
+    existing = store.find_pair(values["email"], values["artwork_slug"])
+    if existing and existing["status"] == "confirmed":
+        return 409, {
+            "ok": False,
+            "error": "already_registered",
+            "message": "This email is already registered.",
+        }
+    holder = store.find_pack(values["pack_number"])
+    exclude_id = existing["id"] if existing and existing["status"] == "unconfirmed" else None
+    if holder and holder["id"] != exclude_id:
+        return 409, PACK_TAKEN
+    token = new_token()
+    confirm_url = f"{settings.public_base_url}/confirm?token={token}"
+    token_digest = hash_token(token)
+    if existing and existing["status"] == "unconfirmed":
+        try:
+            mailer.send_pack_claim_confirmation(values["email"], artwork["title"], confirm_url)
+        except Exception:
+            LOGGER.info("confirmation email failed id=%s", existing["id"])
+            return 502, {
+                "ok": False,
+                "error": "email_failed",
+                "message": "We could not send the confirmation email. Nothing was saved.",
+            }
+        try:
+            replaced = store.replace_unconfirmed(existing["id"], values, token_digest)
+        except psycopg2.errors.UniqueViolation as exc:
+            if _pack_unique_violation(exc):
+                return 409, PACK_TAKEN
+            LOGGER.info("confirmation email failed id=%s", existing["id"])
+            return 502, {
+                "ok": False,
+                "error": "email_failed",
+                "message": "Please try again later.",
+            }
+        if not replaced:
+            LOGGER.info("confirmation email failed id=%s", existing["id"])
+            return 502, {
+                "ok": False,
+                "error": "email_failed",
+                "message": "Please try again later.",
+            }
+        LOGGER.info("registration replaced id=%s", existing["id"])
+        return 201, {"ok": True}
+    try:
+        registration_id = store.insert_unconfirmed(values, token_digest)
+    except psycopg2.errors.UniqueViolation as exc:
+        if _pack_unique_violation(exc):
+            return 409, PACK_TAKEN
+        return 409, {
+            "ok": False,
+            "error": "please_retry",
+            "message": "Please try again later.",
+        }
+    try:
+        mailer.send_pack_claim_confirmation(values["email"], artwork["title"], confirm_url)
+    except Exception:
+        try:
+            store.delete_registration(registration_id)
+        except Exception:
+            pass
+        LOGGER.info("confirmation email failed id=%s", registration_id)
+        return 502, {
+            "ok": False,
+            "error": "email_failed",
+            "message": "We could not send the confirmation email. Nothing was saved.",
+        }
+    LOGGER.info("registration saved id=%s", registration_id)
+    return 201, {"ok": True}
+
+
+def open_pack_confirmation(store, settings, token: str) -> tuple[str, str | None]:
+    store.purge_expired()
+    if not token:
+        return "invalid", None
+    details = store.confirm_details(hash_token(token))
+    status = details["status"]
+    source = details.get("source_tag")
+    if status != "confirmed" or not source:
+        return status, None
+    return status, claimed_redirect_url(source, settings.conference_public_url)

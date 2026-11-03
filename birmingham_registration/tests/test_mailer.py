@@ -14,6 +14,9 @@ from birmingham_registration.mailer import (
     contact_thank_you_text,
     mailgun_smtp_host,
     mailgun_smtp_port,
+    pack_claim_confirmation_html,
+    pack_claim_confirmation_subject,
+    pack_claim_confirmation_text,
 )
 
 
@@ -227,6 +230,22 @@ def test_mailgun_sends_contact_thank_you_and_service_emails_with_reply_to(monkey
     assert service_msg["Subject"] == "Museum Association Conference enquiry from Ada Lovelace"
     assert thank_you_msg["To"] == "ada@example.com"
     assert thank_you_msg["Subject"] == "Thank you for contacting Take Me Around"
+
+
+def test_pack_claim_confirmation_email_asks_them_to_unlock_the_experience():
+    url = "https://interest.example.com/confirm?token=abc"
+    text = pack_claim_confirmation_text("The Golden Boys", url)
+    assert "The Golden Boys" in text
+    assert "full experience" in text
+    assert "20 minutes" in text
+    assert url in text
+    page = pack_claim_confirmation_html("The Golden Boys", url)
+    assert pack_claim_confirmation_subject("The Golden Boys") == (
+        "Confirm your email to unlock The Golden Boys"
+    )
+    assert "Unlock the full experience" in page
+    assert "Confirm my email" in page
+    assert "Museum Association Conference" in page
 
 
 def test_mailgun_smtp_host_and_port_are_limited():

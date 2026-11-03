@@ -3,7 +3,13 @@ import logging
 import psycopg2.errors
 
 from birmingham_registration.config import load_settings
-from birmingham_registration.service import open_confirmation, submit_contact, submit_registration
+from birmingham_registration.service import (
+    open_confirmation,
+    open_pack_confirmation,
+    submit_contact,
+    submit_pack_claim,
+    submit_registration,
+)
 
 SETTINGS = load_settings(
     {
@@ -44,6 +50,15 @@ PAYLOAD = {
     "consent": True,
 }
 
+CLAIM_PAYLOAD = {
+    "tagCode": "MACTGB003",
+    "name": "Ada",
+    "surname": "Lovelace",
+    "email": "Ada@Example.com",
+    "company": "Analytical Engines",
+    "consent": True,
+}
+
 PACK_TAKEN = {
     "ok": False,
     "error": "pack_taken",
@@ -56,6 +71,7 @@ class FakeMailer:
         self.fail = fail
         self.fail_thank_you = fail_thank_you
         self.sent = []
+        self.pack_claim_sent = []
         self.contact_service_sent = []
         self.contact_thank_you_sent = []
 
@@ -63,6 +79,11 @@ class FakeMailer:
         if self.fail:
             raise RuntimeError("mail down")
         self.sent.append((to_email, artwork_title, confirm_url))
+
+    def send_pack_claim_confirmation(self, to_email, artwork_title, confirm_url):
+        if self.fail:
+            raise RuntimeError("mail down")
+        self.pack_claim_sent.append((to_email, artwork_title, confirm_url))
 
     def send_contact_service_email(self, to_email, values):
         if self.fail:
@@ -387,3 +408,72 @@ def test_submit_contact_returns_502_when_service_or_thank_you_email_fails():
     )
     assert status_second == 502
     assert body_second["error"] == "email_failed"
+
+
+def test_pack_claim_saves_at_zero_stock_and_redirects_after_confirm(store):
+    mailer = FakeMailer()
+    status, body = submit_pack_claim(
+        store, mailer, AllowLimiter(), SETTINGS, CLAIM_PAYLOAD, "10.0.0.1"
+    )
+    assert status == 201
+    assert body == {"ok": True}
+    row = store.find_pack("103")
+    assert row is not None
+    saved = store.get_registration(row["id"])
+    assert saved["source_tag"] == "MACTGB003"
+    assert saved["position"] == ""
+    assert mailer.pack_claim_sent[0][0] == "ada@example.com"
+    token = mailer.pack_claim_sent[0][2].split("token=", 1)[1]
+    result, location = open_pack_confirmation(store, SETTINGS, token)
+    assert result == "confirmed"
+    assert location == "https://takemearound.museum/the-golden-boys"
+    assert store.get_artwork("the-golden-boys")["stock"] == 0
+    assert open_pack_confirmation(store, SETTINGS, token) == ("invalid", None)
+
+
+def test_pack_claim_subtracts_stock_when_available(store):
+    store.set_stock("the-star-of-betlehem", 2)
+    mailer = FakeMailer()
+    submit_pack_claim(
+        store,
+        mailer,
+        AllowLimiter(),
+        SETTINGS,
+        {**CLAIM_PAYLOAD, "tagCode": "MACD001"},
+        "10.0.0.1",
+    )
+    token = mailer.pack_claim_sent[0][2].split("token=", 1)[1]
+    result, location = open_pack_confirmation(store, SETTINGS, token)
+    assert result == "confirmed"
+    assert location == "http://127.0.0.1:5173/dashboard"
+    assert store.get_artwork("the-star-of-betlehem")["stock"] == 1
+
+
+def test_pack_claim_rejects_a_taken_pack_and_a_confirmed_email(store):
+    store.set_stock("the-star-of-betlehem", 1)
+    first = FakeMailer()
+    submit_registration(store, first, AllowLimiter(), SETTINGS, PAYLOAD, "10.0.0.1")
+    open_confirmation(store, first.sent[0][2].split("token=", 1)[1])
+    status, body = submit_pack_claim(
+        store,
+        FakeMailer(),
+        AllowLimiter(),
+        SETTINGS,
+        {**CLAIM_PAYLOAD, "tagCode": "MACTSOB001", "email": "other@example.com"},
+        "10.0.0.1",
+    )
+    assert status == 409
+    assert body == PACK_TAKEN
+    status, body = submit_pack_claim(
+        store, FakeMailer(), AllowLimiter(), SETTINGS, {**CLAIM_PAYLOAD, "tagCode": "MACD002"}, "10.0.0.1"
+    )
+    assert status == 409
+    assert body["error"] == "already_registered"
+
+
+def test_booth_registration_still_requires_stock(store):
+    status, body = submit_registration(
+        store, FakeMailer(), AllowLimiter(), SETTINGS, PAYLOAD, "10.0.0.1"
+    )
+    assert status == 409
+    assert body["error"] == "unavailable"
