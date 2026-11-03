@@ -1,6 +1,12 @@
 from birmingham_registration.app import REGISTRATIONS_READ_HEADER, create_app
 from birmingham_registration.rate_limit import MemoryRateLimiter
-from birmingham_registration.tests.test_service import PAYLOAD, SETTINGS, DenyLimiter, FakeMailer
+from birmingham_registration.tests.test_service import (
+    CLAIM_PAYLOAD,
+    PAYLOAD,
+    SETTINGS,
+    DenyLimiter,
+    FakeMailer,
+)
 from birmingham_registration.tests.test_store import VALUES
 
 READ_HEADERS = {REGISTRATIONS_READ_HEADER: SETTINGS.registrations_read_key}
@@ -196,3 +202,28 @@ def test_confirm_without_stock_says_the_artwork_is_unavailable(store):
     page = client.get(f"/confirm?token={token}")
     assert b"This artwork is no longer available." in page.data
     assert store.find_pair("ada@example.com", "the-star-of-betlehem")["status"] == "unconfirmed"
+
+
+def test_post_pack_claim_then_confirm_redirects_to_the_artwork(store):
+    mailer = FakeMailer()
+    client = build(store, mailer).test_client()
+    response = client.post("/api/pack-claims", json=CLAIM_PAYLOAD)
+    assert response.status_code == 201
+    token = mailer.pack_claim_sent[0][2].split("token=", 1)[1]
+    page = client.get(f"/confirm?token={token}")
+    assert page.status_code == 302
+    assert page.headers["Location"] == "https://takemearound.museum/the-golden-boys"
+    assert page.headers["Referrer-Policy"] == "no-referrer"
+    again = client.get(f"/confirm?token={token}")
+    assert b"This link is invalid or has expired." in again.data
+
+
+def test_booth_confirm_still_renders_the_thank_you_page(store):
+    store.set_stock("the-star-of-betlehem", 1)
+    mailer = FakeMailer()
+    client = build(store, mailer).test_client()
+    client.post("/api/registrations", json=PAYLOAD)
+    token = mailer.sent[0][2].split("token=", 1)[1]
+    page = client.get(f"/confirm?token={token}")
+    assert page.status_code == 200
+    assert b"Your interest is registered." in page.data

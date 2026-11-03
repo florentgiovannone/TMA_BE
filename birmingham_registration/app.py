@@ -2,7 +2,7 @@ import logging
 import secrets
 from datetime import timedelta
 
-from flask import Flask, jsonify, make_response, render_template, request, send_from_directory
+from flask import Flask, jsonify, make_response, redirect, render_template, request, send_from_directory
 from flask_cors import CORS
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -10,8 +10,9 @@ from birmingham_registration.admin import register_admin
 from birmingham_registration.redact import RedactTokenFilter
 from birmingham_registration.service import (
     list_public_registrations,
-    open_confirmation,
+    open_pack_confirmation,
     submit_contact,
+    submit_pack_claim,
     submit_registration,
 )
 
@@ -120,10 +121,28 @@ def create_app(settings, store, mailer, limiter) -> Flask:
         )
         return jsonify(body), status
 
+    @application.post("/api/pack-claims")
+    def pack_claims():
+        status, body = submit_pack_claim(
+            store,
+            mailer,
+            limiter,
+            settings,
+            request.get_json(silent=True),
+            request.remote_addr or "",
+        )
+        return jsonify(body), status
+
     @application.get("/confirm")
     def confirm():
-        result = open_confirmation(store, request.args.get("token", ""))
-        response = make_response(render_template("confirm.html", message=CONFIRM_MESSAGES[result]))
+        status, location = open_pack_confirmation(
+            store, settings, request.args.get("token", "")
+        )
+        if location:
+            response = redirect(location)
+            response.headers["Referrer-Policy"] = "no-referrer"
+            return response
+        response = make_response(render_template("confirm.html", message=CONFIRM_MESSAGES[status]))
         response.headers["Referrer-Policy"] = "no-referrer"
         return response
 
