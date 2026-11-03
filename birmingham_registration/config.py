@@ -15,6 +15,7 @@ REQUIRED_NAMES = (
     "PUBLIC_BASE_URL",
     "PRIVACY_CONTACT_EMAIL",
     "REGISTRATIONS_READ_KEY",
+    "CONFERENCE_PUBLIC_URL",
 )
 
 
@@ -30,6 +31,7 @@ class Settings:
     admin_password: str
     secret_key: str
     public_base_url: str
+    conference_public_url: str
     privacy_contact_email: str
     registrations_read_key: str
     cors_origins: list[str]
@@ -72,6 +74,7 @@ def load_settings(environ: Mapping[str, str]) -> Settings:
         admin_password=environ["ADMIN_PASSWORD"].strip(),
         secret_key=environ["SECRET_KEY"].strip(),
         public_base_url=environ["PUBLIC_BASE_URL"].strip().rstrip("/"),
+        conference_public_url=environ["CONFERENCE_PUBLIC_URL"].strip().rstrip("/"),
         privacy_contact_email=environ["PRIVACY_CONTACT_EMAIL"].strip(),
         registrations_read_key=environ["REGISTRATIONS_READ_KEY"].strip(),
         cors_origins=origins,

@@ -17,6 +17,7 @@ SETTINGS = load_settings(
         "PUBLIC_BASE_URL": "http://127.0.0.1:5051",
         "PRIVACY_CONTACT_EMAIL": "privacy@example.com",
         "REGISTRATIONS_READ_KEY": "read-key",
+        "CONFERENCE_PUBLIC_URL": "http://127.0.0.1:5173",
     }
 )
 

@@ -13,6 +13,7 @@ REQUIRED = {
     "PUBLIC_BASE_URL": "https://interest.example.com",
     "PRIVACY_CONTACT_EMAIL": "privacy@example.com",
     "REGISTRATIONS_READ_KEY": "read-key",
+    "CONFERENCE_PUBLIC_URL": "http://127.0.0.1:5173",
 }
 
 
@@ -30,6 +31,12 @@ def test_load_settings_applies_defaults_and_https_cookie_flag():
     assert settings.mailgun_smtp_port == 587
     assert settings.secure_cookies is True
     assert settings.registrations_read_key == "read-key"
+    assert settings.conference_public_url == "http://127.0.0.1:5173"
+
+
+def test_load_settings_strips_the_conference_public_url():
+    settings = load_settings({**REQUIRED, "CONFERENCE_PUBLIC_URL": "http://127.0.0.1:5173/"})
+    assert settings.conference_public_url == "http://127.0.0.1:5173"
 
 
 def test_load_settings_strips_the_public_url_and_lists_every_missing_name():
