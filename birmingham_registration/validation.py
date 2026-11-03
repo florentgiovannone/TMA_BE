@@ -29,6 +29,9 @@ BLANK = {
     "country": "Choose a country.",
 }
 ARTWORK_SLUGS = ("the-star-of-betlehem", "the-golden-boys")
+STAR_ARTWORK_URL = "https://takemearound.gallery/the-star-of-bethlehem"
+GOLDEN_ARTWORK_URL = "https://takemearound.museum/the-golden-boys"
+TAG_PREFIX = re.compile(r"^(MACTSOB|MACTGB|MACD)(\d{1,6})$")
 CONTACT_LIMITS = {
     "name": 100,
     "email": 254,
@@ -40,6 +43,116 @@ CONTACT_BLANK = {
     "email": "Enter a valid email.",
     "message": "Enter a message.",
 }
+
+
+def canonical_pack_tag(value: object) -> str | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    trimmed = value.strip()
+    if trimmed.startswith("{") or trimmed.startswith("["):
+        return None
+    compact = re.sub(r"[^A-Z0-9]", "", trimmed.upper())
+    match = TAG_PREFIX.fullmatch(compact)
+    if not match:
+        return None
+    serial = int(match.group(2))
+    if serial < 1:
+        return None
+    padded = f"{serial:03d}" if serial < 1000 else str(serial)
+    return f"{match.group(1)}{padded}"
+
+
+def pack_claim_from_tag(value: object) -> dict | None:
+    code = canonical_pack_tag(value)
+    if code is None:
+        return None
+    if code.startswith("MACTSOB"):
+        serial = int(code[7:])
+        if serial < 1 or serial > 100:
+            return None
+        return {
+            "tag_code": code,
+            "pack_number": f"{serial:03d}",
+            "artwork_slug": "the-star-of-betlehem",
+            "kind": "artwork",
+            "destination_url": STAR_ARTWORK_URL,
+        }
+    if code.startswith("MACTGB"):
+        serial = int(code[6:])
+        if serial < 1 or serial > 100:
+            return None
+        return {
+            "tag_code": code,
+            "pack_number": f"{serial + 100:03d}",
+            "artwork_slug": "the-golden-boys",
+            "kind": "artwork",
+            "destination_url": GOLDEN_ARTWORK_URL,
+        }
+    if code.startswith("MACD"):
+        serial = int(code[4:])
+        if serial < 1 or serial > 200:
+            return None
+        star = serial <= 100
+        return {
+            "tag_code": code,
+            "pack_number": f"{serial:03d}",
+            "artwork_slug": "the-star-of-betlehem" if star else "the-golden-boys",
+            "kind": "dashboard",
+            "destination_url": "/dashboard",
+        }
+    return None
+
+
+def claimed_redirect_url(source_tag: str, conference_public_url: str) -> str | None:
+    claim = pack_claim_from_tag(source_tag)
+    if claim is None:
+        return None
+    if claim["kind"] == "dashboard":
+        return conference_public_url.rstrip("/") + "/dashboard"
+    return claim["destination_url"]
+
+
+def validate_pack_claim(payload: object) -> dict:
+    data = payload if isinstance(payload, dict) else {}
+    errors: dict[str, str] = {}
+    values: dict[str, object] = {}
+    claim = pack_claim_from_tag(data.get("tagCode"))
+    if claim is None:
+        errors["tagCode"] = "Enter a valid pack tag."
+    else:
+        values["source_tag"] = claim["tag_code"]
+        values["pack_number"] = claim["pack_number"]
+        values["artwork_slug"] = claim["artwork_slug"]
+    for field in ("name", "surname", "email", "company"):
+        raw = data.get(field, "")
+        text = raw.strip() if isinstance(raw, str) else ""
+        limit = LIMITS[field]
+        if len(text) > limit:
+            errors[field] = f"Use {limit} characters or fewer."
+            continue
+        if field == "email":
+            if not EMAIL.match(text):
+                errors[field] = BLANK[field]
+            else:
+                values[field] = text.lower()
+            continue
+        if not text:
+            errors[field] = BLANK[field]
+        else:
+            values[field] = text
+    if data.get("consent") is not True:
+        errors["consent"] = "Confirm that we may store these details."
+    else:
+        values["consent"] = True
+    values["position"] = ""
+    values["town"] = ""
+    values["country"] = ""
+    values["phone_dial_code"] = ""
+    values["phone_number"] = ""
+    values["phone_extension"] = ""
+    if errors:
+        return {"ok": False, "errors": errors}
+    return {"ok": True, "values": values}
 
 
 def validate_contact(payload: object) -> dict:

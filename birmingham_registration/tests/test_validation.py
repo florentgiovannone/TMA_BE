@@ -1,4 +1,10 @@
-from birmingham_registration.validation import validate_contact, validate_registration
+from birmingham_registration.validation import (
+    claimed_redirect_url,
+    pack_claim_from_tag,
+    validate_contact,
+    validate_pack_claim,
+    validate_registration,
+)
 
 VALID_CONTACT = {
     "name": "Ada Lovelace",
@@ -168,3 +174,62 @@ def test_validate_contact_rejects_fields_over_their_limits():
             "ok": False,
             "errors": {field: f"Use {limit} characters or fewer."},
         }
+
+
+CLAIM = {
+    "tagCode": "mactgb-3",
+    "name": "Ada",
+    "surname": "Lovelace",
+    "email": "Ada@Example.com",
+    "company": "Analytical Engines",
+    "consent": True,
+    "packNumber": "001",
+    "artworkSlug": "the-star-of-betlehem",
+}
+
+
+def test_pack_claim_from_tag_maps_the_three_prefixes():
+    assert pack_claim_from_tag("MACTSOB014")["pack_number"] == "014"
+    assert pack_claim_from_tag("MACTSOB014")["artwork_slug"] == "the-star-of-betlehem"
+    assert pack_claim_from_tag("MACTGB003") == {
+        "tag_code": "MACTGB003",
+        "pack_number": "103",
+        "artwork_slug": "the-golden-boys",
+        "kind": "artwork",
+        "destination_url": "https://takemearound.museum/the-golden-boys",
+    }
+    assert pack_claim_from_tag("MACD150")["kind"] == "dashboard"
+    assert pack_claim_from_tag("MACD150")["pack_number"] == "150"
+    assert pack_claim_from_tag("MACF001") is None
+    assert pack_claim_from_tag("MACTGB101") is None
+
+
+def test_validate_pack_claim_derives_pack_and_ignores_body_pack_and_artwork():
+    result = validate_pack_claim(CLAIM)
+    assert result["ok"] is True
+    assert result["values"]["email"] == "ada@example.com"
+    assert result["values"]["pack_number"] == "103"
+    assert result["values"]["artwork_slug"] == "the-golden-boys"
+    assert result["values"]["source_tag"] == "MACTGB003"
+    assert result["values"]["position"] == ""
+    assert result["values"]["town"] == ""
+    assert result["values"]["country"] == ""
+    assert result["values"]["phone_number"] == ""
+
+
+def test_validate_pack_claim_rejects_blank_fields_and_a_bad_tag():
+    assert validate_pack_claim({})["errors"]["name"] == "Enter your name."
+    assert validate_pack_claim({})["errors"]["consent"] == "Confirm that we may store these details."
+    assert validate_pack_claim({**CLAIM, "tagCode": "hello"})["errors"] == {
+        "tagCode": "Enter a valid pack tag."
+    }
+
+
+def test_claimed_redirect_url_uses_artwork_or_conference_dashboard():
+    assert claimed_redirect_url("MACTSOB014", "http://127.0.0.1:5173") == (
+        "https://takemearound.gallery/the-star-of-bethlehem"
+    )
+    assert claimed_redirect_url("MACD103", "http://127.0.0.1:5173/") == (
+        "http://127.0.0.1:5173/dashboard"
+    )
+    assert claimed_redirect_url("hello", "http://127.0.0.1:5173") is None
