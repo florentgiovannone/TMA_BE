@@ -226,26 +226,45 @@ def test_delete_removes_the_person_and_returns_their_stock(store):
     assert store.get_artwork("the-golden-boys")["stock"] == 0
 
 
-def test_admin_lists_an_edit_button_for_each_person_field(store):
+def test_admin_people_can_sort_by_time_or_pack_number(store):
+    store.set_stock("the-star-of-betlehem", 1)
+    store.set_stock("the-golden-boys", 1)
+    store.insert_confirmed({**VALUES, "pack_number": "050"})
+    store.insert_confirmed({
+        **VALUES,
+        "email": "grace@example.com",
+        "artwork_slug": "the-golden-boys",
+        "pack_number": "101",
+    })
+    client = build(store).test_client()
+    log_in(client)
+    html = client.get("/admin").get_data(as_text=True)
+    assert 'data-sort="pack"' in html
+    assert 'data-sort="time"' in html
+    assert 'data-sort-pack="050"' in html
+    assert 'data-sort-pack="101"' in html
+    assert "data-sort-time=" in html
+    assert "applyPeopleSort" in html
+    older_pack = html.find("MACD050")
+    newer_pack = html.find("MACD101")
+    assert older_pack != -1
+    assert newer_pack != -1
+    assert newer_pack < older_pack
+
+
+def test_admin_lists_one_edit_button_per_person_below_delete(store):
     store.set_stock("the-star-of-betlehem", 1)
     store.insert_confirmed({**VALUES, "phone_dial_code": "+44", "phone_number": "7700900123", "phone_extension": ""})
     client = build(store).test_client()
     log_in(client)
     html = client.get("/admin").get_data(as_text=True)
-    for field in (
-        "name",
-        "surname",
-        "email",
-        "phone",
-        "company",
-        "position",
-        "town",
-        "country",
-        "artwork",
-        "packNumber",
-    ):
-        assert f'data-edit-field="{field}"' in html
-    assert "openFieldEditor" in html
+    assert 'data-edit-field=' not in html
+    assert html.count("data-edit-person>") == 1
+    after_delete = html.split("Delete</button>", 1)[1]
+    assert ">Edit<" in after_delete.split("</td>", 1)[0]
+    assert 'data-edit-modal' in html
+    assert "Confirm changes" in html
+    assert "requestEditConfirmation" in html
 
 
 def test_admin_updates_a_person_field_without_sending_confirmation(store):

@@ -270,7 +270,7 @@ button.sign-in {
 
 .people th:last-child,
 .people td:last-child {
-  width: 72px;
+  width: 88px;
 }
 
 .people th {
@@ -279,6 +279,27 @@ button.sign-in {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   font-weight: 600;
+}
+
+button.sort {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  font-weight: inherit;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+button.sort[aria-sort="ascending"]::after {
+  content: " ↑";
+}
+
+button.sort[aria-sort="descending"]::after {
+  content: " ↓";
 }
 
 .people td:nth-child(8) {
@@ -296,27 +317,11 @@ button.sign-in {
   border: 0;
 }
 
-.field-display {
+.row-actions {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
-}
-
-.field-editor {
-  display: grid;
   gap: 8px;
-}
-
-.field-editor .save,
-.field-editor .cancel {
-  margin-top: 0;
-  padding: 8px 10px;
-}
-
-.field-editor input,
-.field-editor select {
-  margin-top: 4px;
 }
 
 button.delete,

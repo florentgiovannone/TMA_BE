@@ -6,7 +6,7 @@
     <title>Registration admin</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}?v=2" sizes="192x192" />
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}?v=2" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}?v=14" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}?v=16" />
   </head>
   <body>
     <header class="band">
@@ -45,12 +45,12 @@
         <button class="save" type="button" data-save hidden>Save stock</button>
         <button class="cancel" type="button" data-cancel hidden>Cancel</button>
       </div>
-      <div class="add-person-actions" data-add-person-actions {% if errors %}hidden{% endif %}>
+      <div class="add-person-actions" data-add-person-actions {% if errors or editing_id %}hidden{% endif %}>
         <button class="save" type="button" data-add-person>Add a person</button>
       </div>
-      <div class="add-person-panel" data-add-person-panel {% if not errors %}hidden{% endif %}>
+      <div class="add-person-panel" data-add-person-panel {% if not errors and not editing_id %}hidden{% endif %}>
       <p class="lede">Saved as confirmed straight away. No confirmation email is sent.</p>
-      <form class="add-form" method="post" action="/admin/registrations">
+      <form class="add-form" method="post" action="{% if editing_id %}/admin/registrations/{{ editing_id }}{% else %}/admin/registrations{% endif %}" {% if editing_id %}data-editing="true"{% endif %}>
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
         <label>
           Name
@@ -122,7 +122,7 @@
           <input type="text" name="packNumber" value="{{ draft.packNumber or '' }}" inputmode="numeric" maxlength="3" required />
           {% if errors.packNumber %}<span class="field-error">{{ errors.packNumber }}</span>{% endif %}
         </label>
-        <button class="save" type="submit">Add person</button>
+        <button class="save" type="submit">{% if editing_id %}Save{% else %}Add person{% endif %}</button>
         <button class="cancel" type="button" data-add-person-cancel>Cancel</button>
       </form>
       </div>
@@ -140,9 +140,13 @@
               <th scope="col">Town</th>
               <th scope="col">Country</th>
               <th scope="col">Artwork</th>
-              <th scope="col">Pack number</th>
-              <th scope="col">Confirmed</th>
-              <th scope="col"><span class="sr">Remove</span></th>
+              <th scope="col">
+                <button type="button" class="sort" data-sort="pack">Pack number</button>
+              </th>
+              <th scope="col">
+                <button type="button" class="sort" data-sort="time" aria-sort="descending">Confirmed</button>
+              </th>
+              <th scope="col"><span class="sr">Actions</span></th>
             </tr>
           </thead>
           <tbody>
@@ -162,73 +166,30 @@
               "artworkSlug": row.artwork_slug,
               "packNumber": row.pack_number or ""
             } %}
-            <tr data-person='{{ person|tojson }}'>
+            <tr data-person='{{ person|tojson }}' data-sort-time="{{ row.confirmed_at.isoformat() }}" data-sort-pack="{{ row.pack_number or '' }}">
+              <td>{{ row.name }}</td>
+              <td>{{ row.surname }}</td>
+              <td>{{ row.email }}</td>
               <td>
-                <div class="field-display">
-                  <span>{{ row.name }}</span>
-                  <button type="button" class="edit" data-edit-field="name">Edit</button>
-                </div>
+                {% if row.phone_number %}
+                {{ row.phone_dial_code }} {{ row.phone_number }}{% if row.phone_extension %} ext. {{ row.phone_extension }}{% endif %}
+                {% endif %}
               </td>
-              <td>
-                <div class="field-display">
-                  <span>{{ row.surname }}</span>
-                  <button type="button" class="edit" data-edit-field="surname">Edit</button>
-                </div>
-              </td>
-              <td>
-                <div class="field-display">
-                  <span>{{ row.email }}</span>
-                  <button type="button" class="edit" data-edit-field="email">Edit</button>
-                </div>
-              </td>
-              <td>
-                <div class="field-display">
-                  <span>{% if row.phone_number %}{{ row.phone_dial_code }} {{ row.phone_number }}{% if row.phone_extension %} ext. {{ row.phone_extension }}{% endif %}{% endif %}</span>
-                  <button type="button" class="edit" data-edit-field="phone">Edit</button>
-                </div>
-              </td>
-              <td>
-                <div class="field-display">
-                  <span>{{ row.company }}</span>
-                  <button type="button" class="edit" data-edit-field="company">Edit</button>
-                </div>
-              </td>
-              <td>
-                <div class="field-display">
-                  <span>{{ row.position }}</span>
-                  <button type="button" class="edit" data-edit-field="position">Edit</button>
-                </div>
-              </td>
-              <td>
-                <div class="field-display">
-                  <span>{{ row.town }}</span>
-                  <button type="button" class="edit" data-edit-field="town">Edit</button>
-                </div>
-              </td>
-              <td>
-                <div class="field-display">
-                  <span>{{ row.country }}</span>
-                  <button type="button" class="edit" data-edit-field="country">Edit</button>
-                </div>
-              </td>
-              <td>
-                <div class="field-display">
-                  <span>{{ row.artwork_title }}</span>
-                  <button type="button" class="edit" data-edit-field="artwork">Edit</button>
-                </div>
-              </td>
-              <td>
-                <div class="field-display">
-                  <span>{% if row.pack_number %}MACD{{ row.pack_number }}{% endif %}</span>
-                  <button type="button" class="edit" data-edit-field="packNumber">Edit</button>
-                </div>
-              </td>
+              <td>{{ row.company }}</td>
+              <td>{{ row.position }}</td>
+              <td>{{ row.town }}</td>
+              <td>{{ row.country }}</td>
+              <td>{{ row.artwork_title }}</td>
+              <td>{% if row.pack_number %}MACD{{ row.pack_number }}{% endif %}</td>
               <td>{{ row.confirmed_at.strftime("%d %b %Y, %H:%M") }}</td>
               <td>
-                <form method="post" action="/admin/registrations/{{ row.id }}/delete">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
-                  <button class="delete" type="submit">Delete</button>
-                </form>
+                <div class="row-actions">
+                  <form method="post" action="/admin/registrations/{{ row.id }}/delete">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+                    <button class="delete" type="submit">Delete</button>
+                  </form>
+                  <button type="button" class="edit" data-edit-person>Edit</button>
+                </div>
               </td>
             </tr>
             {% else %}
@@ -260,6 +221,16 @@
         <button class="cancel" type="button" data-delete-dismiss>Cancel</button>
       </div>
     </dialog>
+    <dialog class="modal" data-edit-modal aria-labelledby="edit-modal-title">
+      {% include "_mark.html" %}
+      <p class="eyebrow">Museum Association Conference</p>
+      <h2 id="edit-modal-title">Confirm changes</h2>
+      <ul class="modal-list" data-edit-summary></ul>
+      <div class="modal-actions">
+        <button class="save" type="button" data-edit-confirm>Confirm</button>
+        <button class="cancel" type="button" data-edit-dismiss>Cancel</button>
+      </div>
+    </dialog>
     <script type="application/json" id="admin-options">{{ admin_options|tojson }}</script>
     <script>
       var addButton = document.querySelector("[data-add-person]")
@@ -268,7 +239,68 @@
       var addCancel = document.querySelector("[data-add-person-cancel]")
       var addForm = addPanel.querySelector("form")
 
+      var adminOptions = JSON.parse(document.getElementById("admin-options").textContent)
+      var addSubmit = addForm.querySelector("[type=submit]")
+
+      function fieldText(cell) {
+        return cell.textContent.trim()
+      }
+
+      function formValue(name) {
+        var field = addForm.elements[name]
+        return field ? field.value : ""
+      }
+
+      function artworkTitle(slug) {
+        var artwork = adminOptions.artworks.find(function (item) {
+          return item.slug === slug
+        })
+        return artwork ? artwork.title : slug
+      }
+
+      function phoneLabel() {
+        var number = formValue("phoneNumber")
+        if (!number) return ""
+        var label = (formValue("phoneDialCode") + " " + number).trim()
+        var extension = formValue("phoneExtension")
+        return extension ? label + " ext. " + extension : label
+      }
+
+      function resetPersonForm() {
+        addForm.action = "/admin/registrations"
+        delete addForm.dataset.editing
+        addSubmit.textContent = "Add person"
+        addForm.reset()
+      }
+
+      function fillPersonForm(person) {
+        addForm.action = "/admin/registrations/" + person.id
+        addForm.dataset.editing = "true"
+        addSubmit.textContent = "Save"
+        addForm.elements.name.value = person.name || ""
+        addForm.elements.surname.value = person.surname || ""
+        addForm.elements.email.value = person.email || ""
+        addForm.elements.company.value = person.company || ""
+        addForm.elements.position.value = person.position || ""
+        addForm.elements.town.value = person.town || ""
+        addForm.elements.country.value = person.country || ""
+        addForm.elements.phoneDialCode.value = person.phoneDialCode || ""
+        addForm.elements.phoneNumber.value = person.phoneNumber || ""
+        addForm.elements.phoneExtension.value = person.phoneExtension || ""
+        addForm.elements.artworkSlug.value = person.artworkSlug || ""
+        addForm.elements.packNumber.value = person.packNumber || ""
+      }
+
+      function openPersonEditor(person) {
+        fillPersonForm(person)
+        addPanel.hidden = false
+        addActions.hidden = true
+        var first = addPanel.querySelector('input[name="name"]')
+        if (first) first.focus()
+      }
+
       addButton.addEventListener("click", function () {
+        resetPersonForm()
         addPanel.hidden = false
         addActions.hidden = true
         var first = addPanel.querySelector('input[name="name"]')
@@ -277,156 +309,58 @@
       addCancel.addEventListener("click", function () {
         addPanel.hidden = true
         addActions.hidden = false
-        addForm.reset()
+        resetPersonForm()
       })
 
-      var adminOptions = JSON.parse(document.getElementById("admin-options").textContent)
-      var hiddenPersonFields = [
-        "name",
-        "surname",
-        "email",
-        "company",
-        "position",
-        "town",
-        "country",
-        "phoneDialCode",
-        "phoneNumber",
-        "phoneExtension",
-        "artworkSlug",
-        "packNumber"
-      ]
+      document.addEventListener("click", function (event) {
+        var button = event.target.closest("[data-edit-person]")
+        if (!button) return
+        openPersonEditor(JSON.parse(button.closest("tr").getAttribute("data-person")))
+      })
 
-      function fieldText(cell) {
-        var label = cell.querySelector(".field-display span")
-        return label ? label.textContent.trim() : cell.textContent.trim()
+      var peopleSort = { key: "time", dir: "desc" }
+
+      function peopleRows() {
+        return Array.prototype.slice.call(document.querySelectorAll(".people tbody tr[data-sort-time]"))
       }
 
-      function closeFieldEditors() {
-        document.querySelectorAll("[data-field-editor]").forEach(function (editor) {
-          editor.remove()
+      function applyPeopleSort() {
+        var tbody = document.querySelector(".people tbody")
+        if (!tbody) return
+        var rows = peopleRows()
+        if (!rows.length) return
+        var direction = peopleSort.dir === "asc" ? 1 : -1
+        rows.sort(function (left, right) {
+          var a = left.getAttribute("data-sort-" + peopleSort.key) || ""
+          var b = right.getAttribute("data-sort-" + peopleSort.key) || ""
+          if (!a && b) return 1
+          if (a && !b) return -1
+          if (a === b) return 0
+          return a < b ? -direction : direction
         })
-        document.querySelectorAll("[data-editing-field]").forEach(function (cell) {
-          delete cell.dataset.editingField
-          var display = cell.querySelector(".field-display")
-          if (display) display.hidden = false
+        rows.forEach(function (row) {
+          tbody.append(row)
         })
-      }
-
-      function appendStored(form, name, value) {
-        var input = document.createElement("input")
-        input.type = "hidden"
-        input.name = name
-        input.value = value
-        form.append(input)
-      }
-
-      function appendSelect(target, name, value, options, labelFor) {
-        var select = document.createElement("select")
-        select.name = name
-        options.forEach(function (option) {
-          var item = document.createElement("option")
-          item.value = option.value
-          item.textContent = option.label
-          if (option.value === value) item.selected = true
-          select.append(item)
+        document.querySelectorAll(".people [data-sort]").forEach(function (button) {
+          if (button.getAttribute("data-sort") === peopleSort.key) {
+            button.setAttribute("aria-sort", peopleSort.dir === "asc" ? "ascending" : "descending")
+          } else {
+            button.removeAttribute("aria-sort")
+          }
         })
-        if (labelFor) {
-          var label = document.createElement("label")
-          label.textContent = labelFor
-          label.append(select)
-          target.append(label)
-          return select
-        }
-        target.append(select)
-        return select
-      }
-
-      function openFieldEditor(button) {
-        closeFieldEditors()
-        var cell = button.closest("td")
-        var row = button.closest("tr")
-        var field = button.getAttribute("data-edit-field")
-        var person = JSON.parse(row.getAttribute("data-person"))
-        var display = cell.querySelector(".field-display")
-        display.hidden = true
-        cell.dataset.editingField = "true"
-        var form = document.createElement("form")
-        form.className = "field-editor"
-        form.setAttribute("data-field-editor", "")
-        form.method = "post"
-        form.action = "/admin/registrations/" + person.id
-        appendStored(form, "csrf_token", document.querySelector(".add-form input[name=csrf_token]").value)
-        hiddenPersonFields.forEach(function (name) {
-          appendStored(form, name, person[name] || "")
-        })
-        var visible = document.createElement("div")
-        visible.className = "field-editor-fields"
-        if (field === "phone") {
-          form.querySelector("[name=phoneDialCode]").remove()
-          form.querySelector("[name=phoneNumber]").remove()
-          form.querySelector("[name=phoneExtension]").remove()
-          ;[
-            ["phoneDialCode", person.phoneDialCode, "Code"],
-            ["phoneNumber", person.phoneNumber, "Number"],
-            ["phoneExtension", person.phoneExtension, "Ext"]
-          ].forEach(function (item) {
-            var label = document.createElement("label")
-            var input = document.createElement("input")
-            input.type = "text"
-            input.name = item[0]
-            input.value = item[1]
-            label.append(item[2], input)
-            visible.append(label)
-          })
-        } else if (field === "country") {
-          form.querySelector("[name=country]").remove()
-          appendSelect(
-            visible,
-            "country",
-            person.country,
-            adminOptions.countries.map(function (name) {
-              return { value: name, label: name }
-            })
-          )
-        } else if (field === "artwork") {
-          form.querySelector("[name=artworkSlug]").remove()
-          appendSelect(
-            visible,
-            "artworkSlug",
-            person.artworkSlug,
-            adminOptions.artworks.map(function (artwork) {
-              return { value: artwork.slug, label: artwork.title }
-            })
-          )
-        } else {
-          var visibleName = field === "packNumber" ? "packNumber" : field
-          form.querySelector("[name=" + visibleName + "]").remove()
-          var input = document.createElement("input")
-          input.type = field === "email" ? "email" : "text"
-          input.name = visibleName
-          input.value = person[visibleName] || ""
-          if (field === "packNumber") input.maxLength = 3
-          visible.append(input)
-        }
-        var saveField = document.createElement("button")
-        saveField.className = "save"
-        saveField.type = "submit"
-        saveField.textContent = "Save"
-        var cancelField = document.createElement("button")
-        cancelField.className = "cancel"
-        cancelField.type = "button"
-        cancelField.textContent = "Cancel"
-        cancelField.addEventListener("click", closeFieldEditors)
-        form.append(visible, saveField, cancelField)
-        cell.append(form)
-        var first = visible.querySelector("input, select")
-        if (first) first.focus()
       }
 
       document.addEventListener("click", function (event) {
-        var button = event.target.closest("[data-edit-field]")
-        if (!button) return
-        openFieldEditor(button)
+        var button = event.target.closest("[data-sort]")
+        if (!button || !button.closest(".people")) return
+        var key = button.getAttribute("data-sort")
+        if (peopleSort.key === key) {
+          peopleSort.dir = peopleSort.dir === "asc" ? "desc" : "asc"
+        } else {
+          peopleSort.key = key
+          peopleSort.dir = key === "pack" ? "asc" : "desc"
+        }
+        applyPeopleSort()
       })
 
       var stockGrid = document.querySelector("[data-stock-grid]")
@@ -530,11 +464,36 @@
         })
       }
 
+      var editModal = document.querySelector("[data-edit-modal]")
+      var editSummary = document.querySelector("[data-edit-summary]")
+      var confirmEdit = document.querySelector("[data-edit-confirm]")
+      var dismissEdit = document.querySelector("[data-edit-dismiss]")
+
+      function requestEditConfirmation() {
+        fillSummary(editSummary, [
+          ["Name", (formValue("name") + " " + formValue("surname")).trim()],
+          ["Email", formValue("email")],
+          ["Phone", phoneLabel()],
+          ["Company", formValue("company")],
+          ["Position", formValue("position")],
+          ["Town", formValue("town")],
+          ["Country", formValue("country")],
+          ["Artwork", artworkTitle(formValue("artworkSlug"))],
+          ["Pack", formValue("packNumber") ? "MACD" + formValue("packNumber") : ""]
+        ])
+        editModal.showModal()
+      }
+
       document.addEventListener("submit", function (event) {
         var form = event.target
         if (form.classList.contains("stock-form")) {
           event.preventDefault()
           requestStockConfirmation()
+          return
+        }
+        if (form.classList.contains("add-form") && form.dataset.editing) {
+          event.preventDefault()
+          requestEditConfirmation()
           return
         }
         if (!form.action || !form.action.endsWith("/delete")) return
@@ -547,6 +506,12 @@
           ["Artwork", fieldText(cells[8])]
         ])
         deleteModal.showModal()
+      })
+      dismissEdit.addEventListener("click", function () {
+        editModal.close()
+      })
+      confirmEdit.addEventListener("click", function () {
+        addForm.submit()
       })
       dismissDelete.addEventListener("click", function () {
         pendingDelete = null
@@ -571,7 +536,6 @@
 
       async function refreshLive() {
         if (document.querySelector("dialog[open]")) return
-        if (document.querySelector("[data-editing-field]")) return
         if (addPanel && !addPanel.hidden) return
         var editingStock = Boolean(stockGrid.dataset.editing)
         try {
@@ -583,7 +547,10 @@
           var doc = new DOMParser().parseFromString(await response.text(), "text/html")
           var nextPeople = doc.querySelector(".table-scroll")
           var people = document.querySelector(".table-scroll")
-          if (nextPeople && people) people.replaceWith(nextPeople)
+          if (nextPeople && people) {
+            people.replaceWith(nextPeople)
+            applyPeopleSort()
+          }
           if (editingStock) return
           doc.querySelectorAll("[data-stock-card]").forEach(function (nextCard) {
             var slug = nextCard.getAttribute("data-stock-card")
