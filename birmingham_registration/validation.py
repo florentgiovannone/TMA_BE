@@ -70,7 +70,7 @@ def validate_contact(payload: object) -> dict:
     return {"ok": True, "values": values}
 
 
-def validate_registration(payload: object) -> dict:
+def validate_registration(payload: object, *, email_required: bool = True) -> dict:
     data = payload if isinstance(payload, dict) else {}
     errors: dict[str, str] = {}
     values: dict[str, object] = {}
@@ -81,7 +81,12 @@ def validate_registration(payload: object) -> dict:
             errors[field] = f"Use {limit} characters or fewer."
             continue
         if field == "email":
-            if not EMAIL.match(text):
+            if not text:
+                if email_required:
+                    errors[field] = BLANK[field]
+                else:
+                    values[field] = ""
+            elif not EMAIL.match(text):
                 errors[field] = BLANK[field]
             else:
                 values[field] = text.lower()

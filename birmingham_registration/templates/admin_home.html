@@ -6,7 +6,7 @@
     <title>Registration admin</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}?v=2" sizes="192x192" />
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}?v=2" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}?v=11" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}?v=12" />
   </head>
   <body>
     <header class="band">
@@ -45,6 +45,82 @@
         <button class="save" type="button" data-save hidden>Save stock</button>
         <button class="cancel" type="button" data-cancel hidden>Cancel</button>
       </div>
+      <h2>Add a person</h2>
+      <p class="lede">Saved as confirmed straight away. No confirmation email is sent.</p>
+      <form class="add-form" method="post" action="/admin/registrations">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+        <label>
+          Name
+          <input type="text" name="name" value="{{ draft.name or '' }}" required />
+          {% if errors.name %}<span class="field-error">{{ errors.name }}</span>{% endif %}
+        </label>
+        <label>
+          Surname
+          <input type="text" name="surname" value="{{ draft.surname or '' }}" required />
+          {% if errors.surname %}<span class="field-error">{{ errors.surname }}</span>{% endif %}
+        </label>
+        <label>
+          Email address
+          <input type="email" name="email" value="{{ draft.email or '' }}" />
+          {% if errors.email %}<span class="field-error">{{ errors.email }}</span>{% endif %}
+        </label>
+        <label>
+          Company
+          <input type="text" name="company" value="{{ draft.company or '' }}" required />
+          {% if errors.company %}<span class="field-error">{{ errors.company }}</span>{% endif %}
+        </label>
+        <label>
+          Position
+          <input type="text" name="position" value="{{ draft.position or '' }}" required />
+          {% if errors.position %}<span class="field-error">{{ errors.position }}</span>{% endif %}
+        </label>
+        <label>
+          Town
+          <input type="text" name="town" value="{{ draft.town or '' }}" required />
+          {% if errors.town %}<span class="field-error">{{ errors.town }}</span>{% endif %}
+        </label>
+        <label>
+          Country
+          <select name="country" required>
+            <option value="">Choose a country</option>
+            {% for _code, name, _dial in countries %}
+            <option value="{{ name }}" {% if draft.country == name %}selected{% endif %}>{{ name }}</option>
+            {% endfor %}
+          </select>
+          {% if errors.country %}<span class="field-error">{{ errors.country }}</span>{% endif %}
+        </label>
+        <label>
+          Phone country code
+          <input type="text" name="phoneDialCode" value="{{ draft.phoneDialCode or '' }}" />
+          {% if errors.phoneDialCode %}<span class="field-error">{{ errors.phoneDialCode }}</span>{% endif %}
+        </label>
+        <label>
+          Phone number
+          <input type="text" name="phoneNumber" value="{{ draft.phoneNumber or '' }}" />
+          {% if errors.phoneNumber %}<span class="field-error">{{ errors.phoneNumber }}</span>{% endif %}
+        </label>
+        <label>
+          Extension
+          <input type="text" name="phoneExtension" value="{{ draft.phoneExtension or '' }}" />
+          {% if errors.phoneExtension %}<span class="field-error">{{ errors.phoneExtension }}</span>{% endif %}
+        </label>
+        <label>
+          Artwork
+          <select name="artworkSlug" required>
+            <option value="">Choose an artwork</option>
+            {% for artwork in artworks %}
+            <option value="{{ artwork.slug }}" {% if draft.artworkSlug == artwork.slug %}selected{% endif %}>{{ artwork.title }}</option>
+            {% endfor %}
+          </select>
+          {% if errors.artworkSlug %}<span class="field-error">{{ errors.artworkSlug }}</span>{% endif %}
+        </label>
+        <label>
+          Pack number
+          <input type="text" name="packNumber" value="{{ draft.packNumber or '' }}" inputmode="numeric" maxlength="3" required />
+          {% if errors.packNumber %}<span class="field-error">{{ errors.packNumber }}</span>{% endif %}
+        </label>
+        <button class="save" type="submit">Add person</button>
+      </form>
       <h2>People</h2>
       <div class="table-scroll">
         <table class="people">

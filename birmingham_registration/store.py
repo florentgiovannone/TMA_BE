@@ -73,14 +73,14 @@ class Store:
                 """
                 CREATE UNIQUE INDEX registrations_one_confirmed
                 ON registrations (email)
-                WHERE status = 'confirmed'
+                WHERE status = 'confirmed' AND email <> ''
                 """
             )
             cur.execute(
                 """
                 CREATE UNIQUE INDEX registrations_one_unconfirmed
                 ON registrations (email)
-                WHERE status = 'unconfirmed'
+                WHERE status = 'unconfirmed' AND email <> ''
                 """
             )
         except psycopg2.Error:
@@ -180,6 +180,55 @@ class Store:
                     (pack_number,),
                 )
                 return _row(cur.fetchone())
+
+    def insert_confirmed(self, values: dict) -> str:
+        registration_id = str(uuid.uuid4())
+        conn = self._connect()
+        try:
+            with conn:
+                with _cursor(conn) as cur:
+                    cur.execute(
+                        """
+                        UPDATE artworks
+                        SET stock = stock - 1
+                        WHERE slug = %s AND stock > 0
+                        RETURNING stock
+                        """,
+                        (values["artwork_slug"],),
+                    )
+                    if cur.fetchone() is None:
+                        return None
+                    cur.execute(
+                        """
+                        INSERT INTO registrations (
+                          id, name, surname, email, phone_dial_code, phone_number,
+                          phone_extension, company, position, town, country,
+                          artwork_slug, pack_number, status, consent_at, created_at,
+                          confirmed_at, expires_at, token_hash
+                        ) VALUES (
+                          %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                          %s, %s, 'confirmed', now(), now(), now(), now(), NULL
+                        )
+                        """,
+                        (
+                            registration_id,
+                            values["name"],
+                            values["surname"],
+                            values["email"],
+                            values.get("phone_dial_code") or None,
+                            values.get("phone_number") or None,
+                            values.get("phone_extension") or None,
+                            values["company"],
+                            values["position"],
+                            values["town"],
+                            values["country"],
+                            values["artwork_slug"],
+                            values["pack_number"],
+                        ),
+                    )
+            return registration_id
+        finally:
+            conn.close()
 
     def insert_unconfirmed(self, values: dict, token_hash: str) -> str:
         registration_id = str(uuid.uuid4())

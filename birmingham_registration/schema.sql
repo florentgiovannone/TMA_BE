@@ -28,11 +28,11 @@ ALTER TABLE registrations ADD COLUMN IF NOT EXISTS phone_extension varchar(10);
 
 CREATE UNIQUE INDEX IF NOT EXISTS registrations_one_confirmed
   ON registrations (email)
-  WHERE status = 'confirmed';
+  WHERE status = 'confirmed' AND email <> '';
 
 CREATE UNIQUE INDEX IF NOT EXISTS registrations_one_unconfirmed
   ON registrations (email)
-  WHERE status = 'unconfirmed';
+  WHERE status = 'unconfirmed' AND email <> '';
 
 CREATE UNIQUE INDEX IF NOT EXISTS registrations_token_hash
   ON registrations (token_hash)

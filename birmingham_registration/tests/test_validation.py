@@ -114,6 +114,16 @@ def test_stores_the_three_digit_pack_number():
     assert validate_registration(VALID)["values"]["pack_number"] == "001"
 
 
+def test_admin_registration_allows_a_blank_email_but_rejects_an_invalid_one():
+    result = validate_registration({**VALID, "email": ""}, email_required=False)
+    assert result["ok"] is True
+    assert result["values"]["email"] == ""
+    assert validate_registration({**VALID, "email": "   "}, email_required=False)["values"]["email"] == ""
+    assert validate_registration({**VALID, "email": "not-an-email"}, email_required=False)["errors"] == {
+        "email": "Enter a valid email."
+    }
+
+
 def test_validate_contact_accepts_valid_payload_and_optional_organisation():
     result = validate_contact(VALID_CONTACT)
     assert result == {

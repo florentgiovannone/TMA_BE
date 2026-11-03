@@ -192,3 +192,19 @@ def test_insert_stores_pack_number_and_rejects_a_duplicate_or_wrong_range(store)
     assert store.get_registration(registration_id)["pack_number"] == "050"
     assert store.find_pack("001") is None
     assert store.list_confirmed() == []
+
+
+def test_two_confirmed_rows_can_share_a_blank_email(store):
+    store.set_stock("the-star-of-betlehem", 2)
+    first = {**VALUES, "email": "", "pack_number": "001"}
+    second = {**VALUES, "email": "", "name": "Grace", "pack_number": "002"}
+    first_id = store.insert_confirmed(first)
+    second_id = store.insert_confirmed(second)
+    assert first_id
+    assert second_id
+    people = store.list_confirmed()
+    assert sorted((row["name"], row["email"], row["pack_number"]) for row in people) == [
+        ("Ada", "", "001"),
+        ("Grace", "", "002"),
+    ]
+    assert store.get_artwork("the-star-of-betlehem")["stock"] == 0

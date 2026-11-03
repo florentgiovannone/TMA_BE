@@ -136,6 +136,73 @@ def test_admin_lists_and_exports_only_confirmed_people(store):
     assert all(cell != FORMULA_NAME for row in rows[1:] for cell in row)
 
 
+def test_admin_creates_a_confirmed_person_without_an_email(store):
+    store.set_stock("the-star-of-betlehem", 1)
+    client = build(store).test_client()
+    log_in(client)
+    page = client.get("/admin")
+    html = page.get_data(as_text=True)
+    assert 'name="email"' in html
+    assert "required" not in html.split('name="email"', 1)[1].split(">", 1)[0]
+    csrf = html.split('name="csrf_token" value="', 1)[1].split('"', 1)[0]
+    response = client.post(
+        "/admin/registrations",
+        data={
+            "csrf_token": csrf,
+            "name": "Walk",
+            "surname": "Up",
+            "email": "",
+            "company": "Museum",
+            "position": "Visitor",
+            "town": "Birmingham",
+            "country": "United Kingdom",
+            "artworkSlug": "the-star-of-betlehem",
+            "packNumber": "001",
+        },
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    people = store.list_confirmed()
+    assert [(row["name"], row["surname"], row["email"], row["pack_number"]) for row in people] == [
+        ("Walk", "Up", "", "001"),
+    ]
+    assert store.get_artwork("the-star-of-betlehem")["stock"] == 0
+    assert b"Walk" in response.data
+
+
+def test_admin_saves_a_person_with_email_without_sending_confirmation(store):
+    store.set_stock("the-star-of-betlehem", 1)
+    mailer = FakeMailer()
+    client = build(store, mailer).test_client()
+    log_in(client)
+    page = client.get("/admin")
+    html = page.get_data(as_text=True)
+    csrf = html.split('name="csrf_token" value="', 1)[1].split('"', 1)[0]
+    response = client.post(
+        "/admin/registrations",
+        data={
+            "csrf_token": csrf,
+            "name": "Walk",
+            "surname": "Up",
+            "email": "Walk@Example.com",
+            "company": "Museum",
+            "position": "Visitor",
+            "town": "Birmingham",
+            "country": "United Kingdom",
+            "artworkSlug": "the-star-of-betlehem",
+            "packNumber": "001",
+        },
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    assert mailer.sent == []
+    people = store.list_confirmed()
+    assert [(row["name"], row["email"], row["pack_number"]) for row in people] == [
+        ("Walk", "walk@example.com", "001"),
+    ]
+    assert b"Walk" in response.data
+
+
 def test_delete_removes_the_person_and_returns_their_stock(store):
     store.set_stock("the-star-of-betlehem", 2)
     mailer = FakeMailer()

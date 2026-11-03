@@ -5,7 +5,12 @@ import io
 import secrets
 from functools import wraps
 
+import psycopg2
 from flask import make_response, redirect, render_template, request, session, url_for
+
+from birmingham_registration.countries import COUNTRIES
+from birmingham_registration.service import PACK_TAKEN
+from birmingham_registration.validation import validate_registration
 
 _CSV_FORMULA_PREFIXES = frozenset("=+-@\t\r")
 
@@ -103,16 +108,72 @@ def register_admin(application) -> None:
         session.clear()
         return redirect(url_for("login"))
 
-    @application.get("/admin")
-    @require_admin
-    def admin_home():
+    def admin_page(errors=None, draft=None, status=200):
         store.purge_expired()
         return render_template(
             "admin_home.html",
             csrf_token=current_csrf(),
             artworks=store.list_artworks(),
             registrations=store.list_confirmed(),
-        )
+            countries=COUNTRIES,
+            errors=errors or {},
+            draft=draft or {},
+        ), status
+
+    @application.get("/admin")
+    @require_admin
+    def admin_home():
+        return admin_page()
+
+    @application.post("/admin/registrations")
+    @require_admin
+    def create_registration():
+        if not csrf_ok():
+            return redirect(url_for("admin_home"))
+        draft = {
+            "name": request.form.get("name", ""),
+            "surname": request.form.get("surname", ""),
+            "email": request.form.get("email", ""),
+            "company": request.form.get("company", ""),
+            "position": request.form.get("position", ""),
+            "town": request.form.get("town", ""),
+            "country": request.form.get("country", ""),
+            "phoneDialCode": request.form.get("phoneDialCode", ""),
+            "phoneNumber": request.form.get("phoneNumber", ""),
+            "phoneExtension": request.form.get("phoneExtension", ""),
+            "artworkSlug": request.form.get("artworkSlug", ""),
+            "packNumber": request.form.get("packNumber", ""),
+            "consent": True,
+        }
+        checked = validate_registration(draft, email_required=False)
+        if not checked["ok"]:
+            return admin_page(checked["errors"], draft, 400)
+        values = checked["values"]
+        if values["email"]:
+            existing = store.find_pair(values["email"], values["artwork_slug"])
+            if existing and existing["status"] == "confirmed":
+                return admin_page({"email": "This email is already registered."}, draft, 409)
+        holder = store.find_pack(values["pack_number"])
+        if holder:
+            return admin_page(PACK_TAKEN["errors"], draft, 409)
+        artwork = store.get_artwork(values["artwork_slug"])
+        if artwork is None or artwork["stock"] <= 0:
+            return admin_page(
+                {"artworkSlug": "That artwork is no longer available."},
+                draft,
+                409,
+            )
+        try:
+            created = store.insert_confirmed(values)
+        except psycopg2.errors.UniqueViolation:
+            return admin_page(PACK_TAKEN["errors"], draft, 409)
+        if not created:
+            return admin_page(
+                {"artworkSlug": "That artwork is no longer available."},
+                draft,
+                409,
+            )
+        return redirect(url_for("admin_home"))
 
     @application.get("/admin/registrations.csv")
     @require_admin
