@@ -3,6 +3,7 @@ import io
 
 from birmingham_registration.tests.test_api import build
 from birmingham_registration.tests.test_service import PAYLOAD, FakeMailer
+from birmingham_registration.tests.test_store import VALUES
 
 FORMULA_NAME = '=HYPERLINK("http://example.test")'
 
@@ -223,6 +224,81 @@ def test_delete_removes_the_person_and_returns_their_stock(store):
     assert store.list_confirmed() == []
     assert store.get_artwork("the-star-of-betlehem")["stock"] == 2
     assert store.get_artwork("the-golden-boys")["stock"] == 0
+
+
+def test_admin_lists_an_edit_button_for_each_person_field(store):
+    store.set_stock("the-star-of-betlehem", 1)
+    store.insert_confirmed({**VALUES, "phone_dial_code": "+44", "phone_number": "7700900123", "phone_extension": ""})
+    client = build(store).test_client()
+    log_in(client)
+    html = client.get("/admin").get_data(as_text=True)
+    for field in (
+        "name",
+        "surname",
+        "email",
+        "phone",
+        "company",
+        "position",
+        "town",
+        "country",
+        "artwork",
+        "packNumber",
+    ):
+        assert f'data-edit-field="{field}"' in html
+    assert "openFieldEditor" in html
+
+
+def test_admin_updates_a_person_field_without_sending_confirmation(store):
+    store.set_stock("the-star-of-betlehem", 1)
+    registration_id = store.insert_confirmed({**VALUES})
+    mailer = FakeMailer()
+    client = build(store, mailer).test_client()
+    log_in(client)
+    page = client.get("/admin")
+    csrf = page.get_data(as_text=True).split('name="csrf_token" value="', 1)[1].split('"', 1)[0]
+    response = client.post(
+        f"/admin/registrations/{registration_id}",
+        data={
+            "csrf_token": csrf,
+            "name": "Grace",
+            "surname": "Lovelace",
+            "email": "Ada@Example.com",
+            "company": "Analytical Engines",
+            "position": "Curator",
+            "town": "Birmingham",
+            "country": "United Kingdom",
+            "phoneDialCode": "+44",
+            "phoneNumber": "7700900123",
+            "phoneExtension": "12",
+            "artworkSlug": "the-star-of-betlehem",
+            "packNumber": "001",
+        },
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    assert mailer.sent == []
+    row = store.get_registration(registration_id)
+    assert row["name"] == "Grace"
+    assert row["email"] == "ada@example.com"
+    assert b"Grace" in response.data
+
+
+def test_add_person_form_starts_hidden_and_opens_from_the_button(store):
+    client = build(store).test_client()
+    log_in(client)
+    html = client.get("/admin").get_data(as_text=True)
+    assert ">Add a person<" in html
+    assert 'data-add-person-panel' in html
+    assert 'data-add-person-panel hidden' in html
+    assert "data-add-person>" in html
+    assert "addPanel.hidden = false" in html
+    invalid = client.post(
+        "/admin/registrations",
+        data={"csrf_token": html.split('name="csrf_token" value="', 1)[1].split('"', 1)[0]},
+        follow_redirects=True,
+    )
+    invalid_html = invalid.get_data(as_text=True)
+    assert "data-add-person-panel hidden" not in invalid_html
 
 
 def test_admin_stock_form_submit_is_intercepted_for_confirmation(store):

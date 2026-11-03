@@ -194,6 +194,27 @@ def test_insert_stores_pack_number_and_rejects_a_duplicate_or_wrong_range(store)
     assert store.list_confirmed() == []
 
 
+def test_update_confirmed_changes_fields_and_moves_stock_when_artwork_changes(store):
+    store.set_stock("the-star-of-betlehem", 1)
+    store.set_stock("the-golden-boys", 2)
+    registration_id = store.insert_confirmed(VALUES)
+    updated = {
+        **VALUES,
+        "name": "Grace",
+        "email": "",
+        "artwork_slug": "the-golden-boys",
+        "pack_number": "101",
+    }
+    assert store.update_confirmed(registration_id, updated) == "ok"
+    row = store.get_registration(registration_id)
+    assert row["name"] == "Grace"
+    assert row["email"] == ""
+    assert row["artwork_slug"] == "the-golden-boys"
+    assert row["pack_number"] == "101"
+    assert store.get_artwork("the-star-of-betlehem")["stock"] == 1
+    assert store.get_artwork("the-golden-boys")["stock"] == 1
+
+
 def test_two_confirmed_rows_can_share_a_blank_email(store):
     store.set_stock("the-star-of-betlehem", 2)
     first = {**VALUES, "email": "", "pack_number": "001"}

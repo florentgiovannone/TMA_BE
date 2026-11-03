@@ -31,6 +31,24 @@ def _pack_label(row: dict) -> str:
     return f"MACD{number}" if number else ""
 
 
+def _form_draft(form) -> dict:
+    return {
+        "name": form.get("name", ""),
+        "surname": form.get("surname", ""),
+        "email": form.get("email", ""),
+        "company": form.get("company", ""),
+        "position": form.get("position", ""),
+        "town": form.get("town", ""),
+        "country": form.get("country", ""),
+        "phoneDialCode": form.get("phoneDialCode", ""),
+        "phoneNumber": form.get("phoneNumber", ""),
+        "phoneExtension": form.get("phoneExtension", ""),
+        "artworkSlug": form.get("artworkSlug", ""),
+        "packNumber": form.get("packNumber", ""),
+        "consent": True,
+    }
+
+
 def _phone_label(row: dict) -> str:
     number = row.get("phone_number") or ""
     if not number:
@@ -110,15 +128,72 @@ def register_admin(application) -> None:
 
     def admin_page(errors=None, draft=None, status=200):
         store.purge_expired()
+        artworks = store.list_artworks()
         return render_template(
             "admin_home.html",
             csrf_token=current_csrf(),
-            artworks=store.list_artworks(),
+            artworks=artworks,
             registrations=store.list_confirmed(),
             countries=COUNTRIES,
+            admin_options={
+                "countries": [name for _code, name, _dial in COUNTRIES],
+                "artworks": [{"slug": row["slug"], "title": row["title"]} for row in artworks],
+            },
             errors=errors or {},
             draft=draft or {},
         ), status
+
+    def save_registration(registration_id: str | None = None):
+        if not csrf_ok():
+            return redirect(url_for("admin_home"))
+        draft = _form_draft(request.form)
+        checked = validate_registration(draft, email_required=False)
+        if not checked["ok"]:
+            return admin_page(checked["errors"], draft, 400)
+        values = checked["values"]
+        if values["email"]:
+            existing = store.find_pair(values["email"], values["artwork_slug"])
+            if (
+                existing
+                and existing["status"] == "confirmed"
+                and str(existing["id"]) != str(registration_id or "")
+            ):
+                return admin_page({"email": "This email is already registered."}, draft, 409)
+        holder = store.find_pack(values["pack_number"])
+        if holder and str(holder["id"]) != str(registration_id or ""):
+            return admin_page(PACK_TAKEN["errors"], draft, 409)
+        if registration_id is None:
+            artwork = store.get_artwork(values["artwork_slug"])
+            if artwork is None or artwork["stock"] <= 0:
+                return admin_page(
+                    {"artworkSlug": "That artwork is no longer available."},
+                    draft,
+                    409,
+                )
+            try:
+                created = store.insert_confirmed(values)
+            except psycopg2.errors.UniqueViolation:
+                return admin_page(PACK_TAKEN["errors"], draft, 409)
+            if not created:
+                return admin_page(
+                    {"artworkSlug": "That artwork is no longer available."},
+                    draft,
+                    409,
+                )
+            return redirect(url_for("admin_home"))
+        try:
+            updated = store.update_confirmed(registration_id, values)
+        except psycopg2.errors.UniqueViolation:
+            return admin_page(PACK_TAKEN["errors"], draft, 409)
+        if updated == "missing":
+            return redirect(url_for("admin_home"))
+        if updated == "unavailable":
+            return admin_page(
+                {"artworkSlug": "That artwork is no longer available."},
+                draft,
+                409,
+            )
+        return redirect(url_for("admin_home"))
 
     @application.get("/admin")
     @require_admin
@@ -128,52 +203,12 @@ def register_admin(application) -> None:
     @application.post("/admin/registrations")
     @require_admin
     def create_registration():
-        if not csrf_ok():
-            return redirect(url_for("admin_home"))
-        draft = {
-            "name": request.form.get("name", ""),
-            "surname": request.form.get("surname", ""),
-            "email": request.form.get("email", ""),
-            "company": request.form.get("company", ""),
-            "position": request.form.get("position", ""),
-            "town": request.form.get("town", ""),
-            "country": request.form.get("country", ""),
-            "phoneDialCode": request.form.get("phoneDialCode", ""),
-            "phoneNumber": request.form.get("phoneNumber", ""),
-            "phoneExtension": request.form.get("phoneExtension", ""),
-            "artworkSlug": request.form.get("artworkSlug", ""),
-            "packNumber": request.form.get("packNumber", ""),
-            "consent": True,
-        }
-        checked = validate_registration(draft, email_required=False)
-        if not checked["ok"]:
-            return admin_page(checked["errors"], draft, 400)
-        values = checked["values"]
-        if values["email"]:
-            existing = store.find_pair(values["email"], values["artwork_slug"])
-            if existing and existing["status"] == "confirmed":
-                return admin_page({"email": "This email is already registered."}, draft, 409)
-        holder = store.find_pack(values["pack_number"])
-        if holder:
-            return admin_page(PACK_TAKEN["errors"], draft, 409)
-        artwork = store.get_artwork(values["artwork_slug"])
-        if artwork is None or artwork["stock"] <= 0:
-            return admin_page(
-                {"artworkSlug": "That artwork is no longer available."},
-                draft,
-                409,
-            )
-        try:
-            created = store.insert_confirmed(values)
-        except psycopg2.errors.UniqueViolation:
-            return admin_page(PACK_TAKEN["errors"], draft, 409)
-        if not created:
-            return admin_page(
-                {"artworkSlug": "That artwork is no longer available."},
-                draft,
-                409,
-            )
-        return redirect(url_for("admin_home"))
+        return save_registration()
+
+    @application.post("/admin/registrations/<registration_id>")
+    @require_admin
+    def update_registration(registration_id: str):
+        return save_registration(registration_id)
 
     @application.get("/admin/registrations.csv")
     @require_admin

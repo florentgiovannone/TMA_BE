@@ -230,6 +230,86 @@ class Store:
         finally:
             conn.close()
 
+    def update_confirmed(self, registration_id: str, values: dict) -> str:
+        conn = self._connect()
+        try:
+            with conn:
+                with _cursor(conn) as cur:
+                    cur.execute(
+                        """
+                        SELECT artwork_slug
+                        FROM registrations
+                        WHERE id = %s AND status = 'confirmed'
+                        FOR UPDATE
+                        """,
+                        (registration_id,),
+                    )
+                    current = _row(cur.fetchone())
+                    if current is None:
+                        return "missing"
+                    old_slug = current["artwork_slug"]
+                    new_slug = values["artwork_slug"]
+                    if new_slug != old_slug:
+                        cur.execute(
+                            """
+                            UPDATE artworks
+                            SET stock = stock + 1
+                            WHERE slug = %s AND stock < 2147483647
+                            """,
+                            (old_slug,),
+                        )
+                        if cur.rowcount != 1:
+                            raise _StockUnavailable()
+                        cur.execute(
+                            """
+                            UPDATE artworks
+                            SET stock = stock - 1
+                            WHERE slug = %s AND stock > 0
+                            RETURNING stock
+                            """,
+                            (new_slug,),
+                        )
+                        if cur.fetchone() is None:
+                            raise _StockUnavailable()
+                    cur.execute(
+                        """
+                        UPDATE registrations SET
+                          name = %s,
+                          surname = %s,
+                          email = %s,
+                          phone_dial_code = %s,
+                          phone_number = %s,
+                          phone_extension = %s,
+                          company = %s,
+                          position = %s,
+                          town = %s,
+                          country = %s,
+                          artwork_slug = %s,
+                          pack_number = %s
+                        WHERE id = %s AND status = 'confirmed'
+                        """,
+                        (
+                            values["name"],
+                            values["surname"],
+                            values["email"],
+                            values.get("phone_dial_code") or None,
+                            values.get("phone_number") or None,
+                            values.get("phone_extension") or None,
+                            values["company"],
+                            values["position"],
+                            values["town"],
+                            values["country"],
+                            values["artwork_slug"],
+                            values["pack_number"],
+                            registration_id,
+                        ),
+                    )
+            return "ok"
+        except _StockUnavailable:
+            return "unavailable"
+        finally:
+            conn.close()
+
     def insert_unconfirmed(self, values: dict, token_hash: str) -> str:
         registration_id = str(uuid.uuid4())
         with self._session() as conn:

@@ -157,11 +157,30 @@ select {
   font-size: 16px;
 }
 
+.add-person-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 36px;
+}
+
+.add-person-actions .save {
+  margin-top: 0;
+}
+
+.add-person-panel {
+  margin: 0 0 36px;
+}
+
+.add-person-panel .lede {
+  margin-bottom: 12px;
+}
+
 .add-form {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
-  margin: 0 0 36px;
+  margin: 0;
   background: var(--paper);
   border-top: 3px solid var(--gold);
   padding: 18px;
@@ -277,7 +296,31 @@ button.sign-in {
   border: 0;
 }
 
-button.delete {
+.field-display {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.field-editor {
+  display: grid;
+  gap: 8px;
+}
+
+.field-editor .save,
+.field-editor .cancel {
+  margin-top: 0;
+  padding: 8px 10px;
+}
+
+.field-editor input,
+.field-editor select {
+  margin-top: 4px;
+}
+
+button.delete,
+button.edit {
   border: 0;
   background: transparent;
   color: var(--navy);
