@@ -114,6 +114,7 @@ def test_admin_lists_and_exports_only_confirmed_people(store):
     assert b"Museum Association Conference" in page.data
     assert b"Birmingham Conference" not in page.data
     assert b"Ada" in page.data
+    assert b">People (2)<" in page.data
     assert b"Hidden" not in page.data
     assert b"The Star of Betlehem" in page.data
     assert b"MACD001" in page.data
@@ -306,6 +307,7 @@ def test_add_person_form_starts_hidden_and_opens_from_the_button(store):
     client = build(store).test_client()
     log_in(client)
     html = client.get("/admin").get_data(as_text=True)
+    assert ">People (0)<" in html
     assert ">Add a person<" in html
     assert 'data-add-person-panel' in html
     assert 'data-add-person-panel hidden' in html

@@ -126,7 +126,8 @@
         <button class="cancel" type="button" data-add-person-cancel>Cancel</button>
       </form>
       </div>
-      <h2>People</h2>
+      <div data-people-section>
+      <h2>People ({{ registrations|length }})</h2>
       <div class="table-scroll">
         <table class="people">
           <thead>
@@ -199,6 +200,7 @@
             {% endfor %}
           </tbody>
         </table>
+      </div>
       </div>
     </main>
     <dialog class="modal" data-stock-modal aria-labelledby="stock-modal-title">
@@ -545,8 +547,8 @@
             return
           }
           var doc = new DOMParser().parseFromString(await response.text(), "text/html")
-          var nextPeople = doc.querySelector(".table-scroll")
-          var people = document.querySelector(".table-scroll")
+          var nextPeople = doc.querySelector("[data-people-section]")
+          var people = document.querySelector("[data-people-section]")
           if (nextPeople && people) {
             people.replaceWith(nextPeople)
             applyPeopleSort()
