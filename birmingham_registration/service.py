@@ -58,7 +58,7 @@ def submit_registration(store, mailer, limiter, settings, payload, ip: str) -> t
     if holder and holder["id"] != exclude_id:
         return 409, PACK_TAKEN
     token = new_token()
-    confirm_url = f"{settings.public_base_url}/confirm?token={token}"
+    confirm_url = f"{settings.conference_public_url}/confirm?token={token}"
     token_digest = hash_token(token)
     if existing and existing["status"] == "unconfirmed":
         try:
@@ -212,7 +212,7 @@ def submit_pack_claim(store, mailer, limiter, settings, payload, ip: str) -> tup
     if holder and holder["id"] != exclude_id:
         return 409, PACK_TAKEN
     token = new_token()
-    confirm_url = f"{settings.public_base_url}/confirm?token={token}"
+    confirm_url = f"{settings.conference_public_url}/confirm?token={token}"
     token_digest = hash_token(token)
     if existing and existing["status"] == "unconfirmed":
         try:

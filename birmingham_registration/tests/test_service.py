@@ -135,6 +135,16 @@ def test_insert_unique_violation_returns_please_retry_without_email(store):
     assert mailer.sent == []
 
 
+def test_confirmation_email_uses_the_conference_public_url(store):
+    store.set_stock("the-star-of-betlehem", 1)
+    mailer = FakeMailer()
+    submit_registration(store, mailer, AllowLimiter(), SETTINGS, PAYLOAD, "10.0.0.1")
+    assert mailer.sent[0][2].startswith("http://127.0.0.1:5173/confirm?token=")
+    claim_mailer = FakeMailer()
+    submit_pack_claim(store, claim_mailer, AllowLimiter(), SETTINGS, CLAIM_PAYLOAD, "10.0.0.1")
+    assert claim_mailer.pack_claim_sent[0][2].startswith("http://127.0.0.1:5173/confirm?token=")
+
+
 def test_first_submit_saves_a_hashed_token_and_emails_the_raw_token(store, caplog):
     store.set_stock("the-star-of-betlehem", 2)
     mailer = FakeMailer()
